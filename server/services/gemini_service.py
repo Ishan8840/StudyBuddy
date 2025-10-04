@@ -13,43 +13,44 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 def generate_summary(session_json: dict) -> str:
 
     prompt = f"""
-            You are an AI assistant analyzing study session data to provide actionable, encouraging feedback.
+            You are an AI assistant analyzing study session data to provide actionable feedback.
 
-            You will receive a JSON object containing study session metrics with ISO 8601 datetime strings:
+            You will receive a JSON object with:
 
-            - timeStarted: When the session began
-            - timeEnded: When the session ended
-            - touchedFace: Array of timestamps when the user touched their face
-            - distracted: Array of [startTime, endTime] pairs showing periods of distraction
-            - breaks: Array of [startTime, endTime] pairs showing scheduled break periods
+            - timeStarted, timeEnded
+            - touchedFace: timestamps
+            - distracted: [startTime, endTime] pairs
+            - breaks: [startTime, endTime] pairs
+            - score: number
+
+            Task:
+
+            1. Compute total study time.
+            2. Comment on positive behaviors (long focus, few distractions, good breaks).
+            3. Identify patterns (face touches, total distraction time, break usage).
+            4. Give 2-3 encouraging, actionable tips for improvement.
+            5. treat score as a percentage of how well they studied.
 
             Rules:
 
-            1. Recognize total study time.
-            2. Comment on positive behaviors:
-            - Long focus stretches
-            - Few distractions
-            - Good use of breaks
-            3. Identify patterns:
-            - Face-touching frequency
-            - Total distraction time and when it happened
-            - Break timing and duration
-            - If distractions overlap with breaks, still report them separately
-            4. Provide 2-3 actionable tips for improvement
-            5. Maintain an encouraging, conversational tone
-            6. Always output a **JSON array of strings**, one tip per string. Example:
+            - Give a 3 strings
+            - Always output a JSON array of strings.
+            - Do not include any text outside the JSON array.
+
+            Example output:
 
             [
-            "You touched your face 3 times today. Try taking a deep breath when you feel distracted.",
-            "Your focus was strong for the first 15 minutes!",
-            "Consider taking slightly shorter breaks to maintain momentum."
+            "You touched your face 12 times today",
+            "Your focus improves significantly after the first 15 minutes. Consider starting with easier tasks.",
+            "Peak productivity detected between 2:30-3:15 PM."
             ]
 
             Session data:
             {session_json}
 
-            Generate the JSON array of tips now. Do not include any text outside the array.
+            Return only the JSON array of tips.
             """
+
 
     
     response = model.generate_content(prompt)

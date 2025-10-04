@@ -22,7 +22,7 @@ def read_root():
 
 
 @app.post("/analyse")
-def create_session(session: SessionTimeline):
+async def create_session(session: SessionTimeline):
     try:
         session_data = session.model_dump()
 
@@ -30,7 +30,6 @@ def create_session(session: SessionTimeline):
         
         session_data["summary"] = summary
         result = sessions_collection.insert_one(session_data)
-
         session_data["_id"] = str(result.inserted_id)
 
         return session_data

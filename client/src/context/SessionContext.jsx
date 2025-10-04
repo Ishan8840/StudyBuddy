@@ -67,13 +67,14 @@ export const SessionProvider = ({ children }) => {
 		const updatedSession = {
 			...session,
 			timeEnded: now.toISOString(),
+	  summary: ["string"]
 			score: focusPercentage,
 		};
 		setSession(updatedSession);
-
 		try {
+      console.log(JSON.stringify(updatedSession));
 			const res = await fetch(
-				'http://localhost:5000/session/start',
+				'http://localhost:8000/analyse',
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
@@ -121,39 +122,39 @@ export const SessionProvider = ({ children }) => {
 		setFaceTouches((prev) => prev + 1);
 	};
 
-	const breakStart = () => {
-		const now = new Date();
-		setIsOnBreak(true);
-		setSession((prev) => ({
-			...prev,
-			breaks: [...prev.breaks, [now.toISOString()]],
-		}));
-		setTimelineEvents((prev) => [
-			...prev,
-			{
-				type: 'break-start',
-				title: 'Break Started',
-				time: formatTime(now),
-				icon: Coffee,
-				color: 'green',
-				xp: null,
-			},
-		]);
-	};
+  const breakStart = () => {
+    const now = new Date().toISOString();
+    setIsOnBreak(true);
+    setSession((prev) => ({
+      ...prev,
+      breaks: [...prev.breaks, [now]], // start time only
+    }));
+    setTimelineEvents((prev) => [
+      ...prev,
+      {
+        type: "break-start",
+        title: "Break Started",
+        time: formatTime(),
+        icon: Coffee,
+        color: "green",
+        xp: null,
+      },
+    ]);
+  };
 
-	const breakEnd = () => {
-		const now = new Date();
-		setIsOnBreak(false);
-		setSession((prev) => {
-			if (prev.breaks.length === 0) return prev;
+  const breakEnd = () => {
+    const now = new Date().toISOString();
+    setIsOnBreak(false);
+    setSession((prev) => {
+      if (prev.breaks.length === 0) return prev;
 
 			const updatedBreaks = [...prev.breaks];
 			const lastBreak = updatedBreaks[updatedBreaks.length - 1];
 
-			updatedBreaks[updatedBreaks.length - 1] = {
-				...lastBreak,
-				end: now.toISOString(),
-			};
+      // push end time as second element
+      if (lastBreak.length === 1) {
+        updatedBreaks[updatedBreaks.length - 1] = [lastBreak[0], now];
+      }
 
 			return { ...prev, breaks: updatedBreaks };
 		});
@@ -211,46 +212,43 @@ export const SessionProvider = ({ children }) => {
 		return () => clearInterval(interval);
 	}, [session]);
 
-	const distractionStart = () => {
-		if (!isOnBreak) {
-			const now = new Date();
-			setIsNotFocused(true);
-			setSession((prev) => ({
-				...prev,
-				distracted: [
-					...prev.distracted,
-					{ start: now.toISOString() },
-				],
-			}));
-			setTimelineEvents((prev) => [
-				...prev,
-				{
-					type: 'distracted',
-					title: 'Distracted',
-					time: formatTime(now),
-					icon: AlertCircle,
-					color: 'red',
-					xp: -10,
-				},
-			]);
-			setDistractedNum((prev) => prev + 1);
-		}
-	};
+  const distractionStart = () => {
+    const now = new Date().toISOString();
+    setIsNotFocused(true);
+    setSession((prev) => ({
+      ...prev,
+      distracted: [...prev.distracted, [now]], // start time only
+    }));
+    setTimelineEvents((prev) => [
+      ...prev,
+      {
+        type: "distraction-start",
+        title: "Distracted",
+        time: formatTime(),
+        icon: Eye,
+        color: "red",
+        xp: -2,
+      },
+    ]);
+	setDistractedNum((prev) => prev + 1);
+  };
 
-	const distractionEnd = () => {
-		const now = new Date();
-		setIsNotFocused(false);
-		setSession((prev) => {
-			if (prev.distracted.length === 0) return prev;
+  const distractionEnd = () => {
+    const now = new Date().toISOString();
+    setIsNotFocused(false);
+    setSession((prev) => {
+      if (prev.distracted.length === 0) return prev;
 
 			const updatedDistractions = [...prev.distracted];
 			const lastDistraction =
 				updatedDistractions[updatedDistractions.length - 1];
 
-			updatedDistractions[updatedDistractions.length - 1] = {
-				...lastDistraction,
-				end: now.toISOString(),
-			};
+      if (lastDistraction.length === 1) {
+        updatedDistractions[updatedDistractions.length - 1] = [
+          lastDistraction[0],
+          now,
+        ];
+      }
 
 			return { ...prev, distracted: updatedDistractions };
 		});

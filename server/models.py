@@ -7,9 +7,10 @@ from bson import ObjectId
 class SessionTimeline(BaseModel):
     timeStarted: datetime
     timeEnded: datetime
-    touchedFace: List[datetime]
-    distracted: List[List[datetime]]
-    breaks: List[List[datetime]]
+    touchedFace: Optional[List[datetime]] = None
+    distracted: Optional[List[List[datetime]]] = None
+    breaks: Optional[List[List[datetime]]] = None
+    score: int
     summary: Optional[List[str]] = None
 
 
