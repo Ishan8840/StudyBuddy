@@ -10,10 +10,8 @@ import SessionTimeline from './components/Timeline.jsx'
 createRoot(document.getElementById('root')).render(
 	<SessionProvider>
 		<SessionBar />
-		<div style={{display:"flex", marginTop:"2rem", gap:"10px"}}>
-			<CombinedTracker />
 		<div style={{display:"flex", marginTop:"2rem", gap:"50px"}}>
-			<CamFeed />
+			<CombinedTracker />
 			<SessionTimeline />
 		</div>
 	</SessionProvider>
