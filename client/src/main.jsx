@@ -1,7 +1,5 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import CamFeed from './components/CamFeed.jsx'
 import CombinedTracker from './components/CombinedTracker.jsx'
 import SessionBar from './components/TopBar.jsx'
 import { SessionProvider } from './context/SessionContext.jsx'
