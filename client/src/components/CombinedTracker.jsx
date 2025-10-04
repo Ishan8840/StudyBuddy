@@ -1,0 +1,464 @@
+import React, { useEffect, useRef, useState } from "react";
+
+export default function CombinedTracker() {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const cameraRef = useRef(null);
+  const holisticRef = useRef(null);
+  const yawHistory = useRef([]);
+  const hasSpokenDistractionRef = useRef(false);
+  const hasSpokenFaceTouchRef = useRef(false);
+
+  const [direction, setDirection] = useState("Forward");
+  const [isDistracted, setIsDistracted] = useState(false);
+  const [handTouch, setHandTouch] = useState({
+    touching: false,
+    startTime: null,
+    overThreshold: false,
+  });
+
+  const lookStartTime = useRef(null);
+  const distractionThreshold = 2000;
+  const faceTouchThreshold = 2000;
+  const distractedPeriods = useRef([]);
+
+  const smoothedBoxRef = useRef(null);
+  const smoothedHandsRef = useRef([]);
+
+  const voices = [
+    "Fz7HYdHHCP1EF1FLn46C",
+    "iCrDUkL56s3C8sCRl7wb",
+    "Qe9WSybioZxssVEwlBSo",
+  ];
+
+  const HAND_CONNECTIONS = [
+    [0, 1],
+    [1, 2],
+    [2, 3],
+    [3, 4],
+    [0, 5],
+    [5, 6],
+    [6, 7],
+    [7, 8],
+    [0, 9],
+    [9, 10],
+    [10, 11],
+    [11, 12],
+    [0, 13],
+    [13, 14],
+    [14, 15],
+    [15, 16],
+    [0, 17],
+    [17, 18],
+    [18, 19],
+    [19, 20],
+  ];
+
+  // Helper functions
+  function smoothValue(prev, current, alpha = 0.2) {
+    if (!prev) return current;
+    return prev * (1 - alpha) + current * alpha;
+  }
+
+  function smoothBox(prevBox, newBox, alpha = 0.2) {
+    if (!prevBox) return newBox;
+    return {
+      x: smoothValue(prevBox.x, newBox.x, alpha),
+      y: smoothValue(prevBox.y, newBox.y, alpha),
+      w: smoothValue(prevBox.w, newBox.w, alpha),
+      h: smoothValue(prevBox.h, newBox.h, alpha),
+    };
+  }
+
+  function smoothHands(prevHands, newHands, alpha = 0.2) {
+    if (!prevHands.length) return newHands;
+    return newHands.map((hand, i) => {
+      if (!prevHands[i]) return hand;
+      return hand.map((point, j) => ({
+        x: smoothValue(prevHands[i][j].x, point.x, alpha),
+        y: smoothValue(prevHands[i][j].y, point.y, alpha),
+      }));
+    });
+  }
+
+  function isPointInBox(point, box) {
+    return (
+      point.x >= box.x &&
+      point.x <= box.x + box.w &&
+      point.y >= box.y &&
+      point.y <= box.y + box.h
+    );
+  }
+
+  function drawCyberBox(ctx, box) {
+    const cornerSize = 20;
+    const radius = 8;
+
+    ctx.strokeStyle = handTouch.overThreshold ? "red" : "#00eaff";
+    ctx.lineWidth = 3;
+    ctx.shadowColor = handTouch.overThreshold ? "red" : "#00eaff";
+    ctx.shadowBlur = 20;
+
+    ctx.beginPath();
+    ctx.moveTo(box.x, box.y + cornerSize);
+    ctx.lineTo(box.x, box.y + radius);
+    ctx.quadraticCurveTo(box.x, box.y, box.x + radius, box.y);
+    ctx.lineTo(box.x + cornerSize, box.y);
+
+    ctx.moveTo(box.x + box.w - cornerSize, box.y);
+    ctx.lineTo(box.x + box.w - radius, box.y);
+    ctx.quadraticCurveTo(box.x + box.w, box.y, box.x + box.w, box.y + radius);
+    ctx.lineTo(box.x + box.w, box.y + cornerSize);
+
+    ctx.moveTo(box.x, box.y + box.h - cornerSize);
+    ctx.lineTo(box.x, box.y + box.h - radius);
+    ctx.quadraticCurveTo(box.x, box.y + box.h, box.x + radius, box.y + box.h);
+    ctx.lineTo(box.x + cornerSize, box.y + box.h);
+
+    ctx.moveTo(box.x + box.w - cornerSize, box.y + box.h);
+    ctx.lineTo(box.x + box.w - radius, box.y + box.h);
+    ctx.quadraticCurveTo(
+      box.x + box.w,
+      box.y + box.h,
+      box.x + box.w,
+      box.y + box.h - radius
+    );
+    ctx.lineTo(box.x + box.w, box.y + box.h - cornerSize);
+
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  const estimateYaw = (landmarks) => {
+    const nose = landmarks[1];
+    const leftEar = landmarks[234];
+    const rightEar = landmarks[454];
+    const midEarX = (leftEar.x + rightEar.x) / 2;
+    return nose.x - midEarX;
+  };
+
+  const generateSpeech = async (type) => {
+    const distractionMessages = [
+      "Get back to work BOY!",
+      "Naughty Naughty Sparshy!",
+      "Don’t make me come over there!",
+    ];
+
+    const faceTouchMessages = [
+      "Stop those sneaky touches!",
+      "Don’t make me catch you again!",
+    ];
+
+    const messages =
+      type === "distraction" ? distractionMessages : faceTouchMessages;
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    const randomVoice = voices[Math.floor(Math.random() * voices.length)];
+
+    try {
+      const response = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${randomVoice}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "xi-api-key": import.meta.env.VITE_ELEVEN_LABS_KEY,
+          },
+          body: JSON.stringify({
+            text: randomMessage,
+            modelId: "eleven_multilingual_v2",
+            voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+          }),
+        }
+      );
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      await audio.play();
+      audio.onended = () => URL.revokeObjectURL(audioUrl);
+    } catch (err) {
+      console.error("Eleven Labs error:", err);
+    }
+  };
+
+  const onResults = (results) => {
+    const canvasEl = canvasRef.current;
+    const ctx = canvasEl?.getContext("2d");
+
+    if (!ctx || !canvasEl) return;
+
+    ctx.save();
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    ctx.translate(canvasEl.width, 0);
+    ctx.scale(-1, 1);
+
+    ctx.drawImage(results.image, 0, 0, canvasEl.width, canvasEl.height);
+
+    // Process face landmarks for head direction
+    if (results.faceLandmarks) {
+      const landmarks = results.faceLandmarks;
+      const yaw = estimateYaw(landmarks);
+
+      yawHistory.current.push(yaw);
+      if (yawHistory.current.length > 5) yawHistory.current.shift();
+      const avgYaw =
+        yawHistory.current.reduce((a, b) => a + b, 0) /
+        yawHistory.current.length;
+
+      const threshold = 0.05;
+      let newDirection = "Forward";
+      if (avgYaw < -threshold) newDirection = "Looking Right";
+      else if (avgYaw > threshold) newDirection = "Looking Left";
+
+      setDirection(newDirection);
+
+      if (newDirection !== "Forward") {
+        if (!lookStartTime.current) {
+          lookStartTime.current = Date.now();
+        } else {
+          // Check if threshold has been exceeded
+          const duration = Date.now() - lookStartTime.current;
+          if (duration >= distractionThreshold && !isDistracted) {
+            setIsDistracted(true);
+          }
+        }
+      } else if (lookStartTime.current) {
+        const duration = Date.now() - lookStartTime.current;
+        if (duration >= distractionThreshold) {
+          distractedPeriods.current.push({
+            start: new Date(lookStartTime.current).toISOString(),
+            end: new Date().toISOString(),
+          });
+          console.log("Distracted periods:", distractedPeriods.current);
+        }
+        lookStartTime.current = null;
+        setIsDistracted(false);
+      }
+
+      // Calculate face bounding box
+      const canvasW = canvasEl.width;
+      const canvasH = canvasEl.height;
+      let minX = 1,
+        maxX = 0,
+        minY = 1,
+        maxY = 0;
+      landmarks.forEach((lm) => {
+        minX = Math.min(minX, lm.x);
+        maxX = Math.max(maxX, lm.x);
+        minY = Math.min(minY, lm.y);
+        maxY = Math.max(maxY, lm.y);
+      });
+      const newBox = {
+        x: minX * canvasW,
+        y: minY * canvasH,
+        w: (maxX - minX) * canvasW,
+        h: (maxY - minY) * canvasH,
+      };
+      smoothedBoxRef.current = smoothBox(smoothedBoxRef.current, newBox);
+
+      if (smoothedBoxRef.current) {
+        drawCyberBox(ctx, smoothedBoxRef.current);
+      }
+    }
+
+    // Process hands
+    let touchingFace = false;
+    const landmarksList = [];
+
+    if (results.leftHandLandmarks) {
+      const hand = results.leftHandLandmarks.map((l) => ({
+        x: l.x * canvasEl.width,
+        y: l.y * canvasEl.height,
+      }));
+      landmarksList.push(hand);
+    }
+
+    if (results.rightHandLandmarks) {
+      const hand = results.rightHandLandmarks.map((l) => ({
+        x: l.x * canvasEl.width,
+        y: l.y * canvasEl.height,
+      }));
+      landmarksList.push(hand);
+    }
+
+    if (smoothedBoxRef.current) {
+      landmarksList.forEach((hand) => {
+        hand.forEach((p) => {
+          if (isPointInBox(p, smoothedBoxRef.current)) {
+            touchingFace = true;
+          }
+        });
+      });
+    }
+
+    smoothedHandsRef.current = smoothHands(
+      smoothedHandsRef.current,
+      landmarksList
+    );
+
+    if (touchingFace) {
+      setHandTouch((prev) => {
+        if (!prev.touching) {
+          return {
+            touching: true,
+            startTime: Date.now(),
+            overThreshold: false,
+          };
+        } else {
+          const duration = (Date.now() - prev.startTime) / 1000;
+          return {
+            ...prev,
+            overThreshold: duration > faceTouchThreshold / 1000,
+          };
+        }
+      });
+    } else {
+      setHandTouch({ touching: false, startTime: null, overThreshold: false });
+    }
+
+    // Draw hands
+    smoothedHandsRef.current.forEach((hand) => {
+      hand.forEach((p) => {
+        const touching =
+          smoothedBoxRef.current && isPointInBox(p, smoothedBoxRef.current);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = touching ? "red" : "rgba(255,0,234,0.8)";
+        ctx.fill();
+      });
+      HAND_CONNECTIONS.forEach(([start, end]) => {
+        const p1 = hand[start];
+        const p2 = hand[end];
+        if (p1 && p2) {
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = "rgba(255,0,234,0.8)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      });
+    });
+
+    ctx.restore();
+  };
+
+  useEffect(() => {
+    if (!window.Holistic || !window.Camera) {
+      console.error("MediaPipe Holistic or Camera not loaded");
+      return;
+    }
+
+    const holistic = new window.Holistic({
+      locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`;
+      },
+    });
+
+    holistic.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      enableSegmentation: false,
+      smoothSegmentation: false,
+      refineFaceLandmarks: true,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    });
+
+    holistic.onResults(onResults);
+    holisticRef.current = holistic;
+
+    if (videoRef.current) {
+      const camera = new window.Camera(videoRef.current, {
+        onFrame: async () => {
+          if (holisticRef.current) {
+            await holisticRef.current.send({ image: videoRef.current });
+          }
+        },
+        width: 640,
+        height: 480,
+      });
+      camera.start();
+      cameraRef.current = camera;
+    }
+
+    return () => {
+      if (cameraRef.current) {
+        cameraRef.current.stop();
+      }
+      if (holisticRef.current) {
+        holisticRef.current.close();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isDistracted && !hasSpokenDistractionRef.current) {
+      generateSpeech("distraction");
+      hasSpokenDistractionRef.current = true;
+    }
+    if (!isDistracted) {
+      hasSpokenDistractionRef.current = false;
+    }
+  }, [isDistracted]);
+
+  useEffect(() => {
+    if (handTouch.overThreshold && !hasSpokenFaceTouchRef.current) {
+      generateSpeech("faceTouch");
+      hasSpokenFaceTouchRef.current = true;
+    }
+    if (!handTouch.overThreshold) {
+      hasSpokenFaceTouchRef.current = false;
+    }
+  }, [handTouch.overThreshold]);
+
+  return (
+    <div style={{ position: "relative", width: 640, height: 480 }}>
+      <video
+        ref={videoRef}
+        style={{ display: "none" }}
+        autoPlay
+        playsInline
+        muted
+      />
+      <canvas
+        ref={canvasRef}
+        width={640}
+        height={480}
+        style={{ border: "1px solid black" }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: 20,
+          left: "50%",
+          transform: "translateX(-50%)",
+          color: "white",
+          fontSize: "24px",
+          fontWeight: "bold",
+          textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
+        }}
+      >
+        {direction}
+      </div>
+      {handTouch.overThreshold && (
+        <div
+          style={{
+            position: "absolute",
+            top: 60,
+            left: "50%",
+            transform: "translateX(-50%)",
+            padding: "10px 20px",
+            backgroundColor: "red",
+            color: "white",
+            fontWeight: "bold",
+            borderRadius: "8px",
+            zIndex: 10,
+          }}
+        >
+          🚨 Stop touching your face!
+        </div>
+      )}
+    </div>
+  );
+}
