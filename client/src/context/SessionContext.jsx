@@ -67,20 +67,17 @@ export const SessionProvider = ({ children }) => {
 		const updatedSession = {
 			...session,
 			timeEnded: now.toISOString(),
-	  summary: ["string"]
+			summary: ['string'],
 			score: focusPercentage,
 		};
 		setSession(updatedSession);
 		try {
-      console.log(JSON.stringify(updatedSession));
-			const res = await fetch(
-				'http://localhost:8000/analyse',
-				{
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(updatedSession),
-				}
-			);
+			console.log(JSON.stringify(updatedSession));
+			const res = await fetch('http://localhost:8000/analyse', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(updatedSession),
+			});
 			const data = await res.json();
 			console.log('✅ Session sent to backend:', data);
 		} catch (err) {
@@ -122,39 +119,42 @@ export const SessionProvider = ({ children }) => {
 		setFaceTouches((prev) => prev + 1);
 	};
 
-  const breakStart = () => {
-    const now = new Date().toISOString();
-    setIsOnBreak(true);
-    setSession((prev) => ({
-      ...prev,
-      breaks: [...prev.breaks, [now]], // start time only
-    }));
-    setTimelineEvents((prev) => [
-      ...prev,
-      {
-        type: "break-start",
-        title: "Break Started",
-        time: formatTime(),
-        icon: Coffee,
-        color: "green",
-        xp: null,
-      },
-    ]);
-  };
+	const breakStart = () => {
+		const now = new Date().toISOString();
+		setIsOnBreak(true);
+		setSession((prev) => ({
+			...prev,
+			breaks: [...prev.breaks, [now]], // start time only
+		}));
+		setTimelineEvents((prev) => [
+			...prev,
+			{
+				type: 'break-start',
+				title: 'Break Started',
+				time: formatTime(),
+				icon: Coffee,
+				color: 'green',
+				xp: null,
+			},
+		]);
+	};
 
-  const breakEnd = () => {
-    const now = new Date().toISOString();
-    setIsOnBreak(false);
-    setSession((prev) => {
-      if (prev.breaks.length === 0) return prev;
+	const breakEnd = () => {
+		const now = new Date().toISOString();
+		setIsOnBreak(false);
+		setSession((prev) => {
+			if (prev.breaks.length === 0) return prev;
 
 			const updatedBreaks = [...prev.breaks];
 			const lastBreak = updatedBreaks[updatedBreaks.length - 1];
 
-      // push end time as second element
-      if (lastBreak.length === 1) {
-        updatedBreaks[updatedBreaks.length - 1] = [lastBreak[0], now];
-      }
+			// push end time as second element
+			if (lastBreak.length === 1) {
+				updatedBreaks[updatedBreaks.length - 1] = [
+					lastBreak[0],
+					now,
+				];
+			}
 
 			return { ...prev, breaks: updatedBreaks };
 		});
@@ -175,9 +175,9 @@ export const SessionProvider = ({ children }) => {
 	const getTotalDistractionTime = (session) => {
 		const now = new Date();
 		return session.distracted.reduce((total, d) => {
-			if (!d.start) return total;
-			const start = new Date(d.start);
-			const end = d.end ? new Date(d.end) : now;
+			if (!d[0]) return total; // skip if no start
+			const start = new Date(d[0]);
+			const end = d[1] ? new Date(d[1]) : now;
 			return total + (end - start);
 		}, 0);
 	};
@@ -212,43 +212,41 @@ export const SessionProvider = ({ children }) => {
 		return () => clearInterval(interval);
 	}, [session]);
 
-  const distractionStart = () => {
-    const now = new Date().toISOString();
-    setIsNotFocused(true);
-    setSession((prev) => ({
-      ...prev,
-      distracted: [...prev.distracted, [now]], // start time only
-    }));
-    setTimelineEvents((prev) => [
-      ...prev,
-      {
-        type: "distraction-start",
-        title: "Distracted",
-        time: formatTime(),
-        icon: Eye,
-        color: "red",
-        xp: -2,
-      },
-    ]);
-	setDistractedNum((prev) => prev + 1);
-  };
+	const distractionStart = () => {
+		const now = new Date().toISOString();
+		setIsNotFocused(true);
+		setSession((prev) => ({
+			...prev,
+			distracted: [...prev.distracted, [now]], // start time only
+		}));
+		setTimelineEvents((prev) => [
+			...prev,
+			{
+				type: 'distraction-start',
+				title: 'Distracted',
+				time: formatTime(),
+				icon: Eye,
+				color: 'red',
+				xp: -2,
+			},
+		]);
+		setDistractedNum((prev) => prev + 1);
+	};
 
-  const distractionEnd = () => {
-    const now = new Date().toISOString();
-    setIsNotFocused(false);
-    setSession((prev) => {
-      if (prev.distracted.length === 0) return prev;
+	const distractionEnd = () => {
+		const now = new Date().toISOString();
+		setIsNotFocused(false);
+		setSession((prev) => {
+			if (prev.distracted.length === 0) return prev;
 
 			const updatedDistractions = [...prev.distracted];
 			const lastDistraction =
 				updatedDistractions[updatedDistractions.length - 1];
 
-      if (lastDistraction.length === 1) {
-        updatedDistractions[updatedDistractions.length - 1] = [
-          lastDistraction[0],
-          now,
-        ];
-      }
+			if (lastDistraction.length === 1) {
+				updatedDistractions[updatedDistractions.length - 1] =
+					[lastDistraction[0], now];
+			}
 
 			return { ...prev, distracted: updatedDistractions };
 		});
