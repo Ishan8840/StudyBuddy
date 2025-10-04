@@ -4,6 +4,7 @@ import CombinedTracker from './components/CombinedTracker.jsx'
 import SessionBar from './components/TopBar.jsx'
 import { SessionProvider } from './context/SessionContext.jsx'
 import SessionTimeline from './components/Timeline.jsx'
+import AIInsights from './components/Insights.jsx'
 
 createRoot(document.getElementById('root')).render(
 	<SessionProvider>
@@ -11,6 +12,7 @@ createRoot(document.getElementById('root')).render(
 		<div style={{display:"flex", marginTop:"2rem", gap:"50px"}}>
 			<CombinedTracker />
 			<SessionTimeline />
+      <AIInsights />
 		</div>
 	</SessionProvider>
 );

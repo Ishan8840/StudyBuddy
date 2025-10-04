@@ -37,6 +37,9 @@ export const SessionProvider = ({ children }) => {
 	const [faceTouches, setFaceTouches] = useState(0);
 	const [distractedNum, setDistractedNum] = useState(0);
 	const [focusPercentage, setFocusPercentage] = useState(100);
+	const [insightsFromBackend, setInsightsFromBackend] = useState(
+		[]
+	);
 
 	const startSession = () => {
 		const now = new Date();
@@ -79,7 +82,7 @@ export const SessionProvider = ({ children }) => {
 				body: JSON.stringify(updatedSession),
 			});
 			const data = await res.json();
-			console.log('✅ Session sent to backend:', data);
+			setInsightsFromBackend(data.summary); // an array of 3 strings
 		} catch (err) {
 			console.error('❌ Failed to end session:', err);
 		}
@@ -273,6 +276,7 @@ export const SessionProvider = ({ children }) => {
 				distractedNum,
 				setDistractedNum,
 				focusPercentage,
+				insightsFromBackend,
 			}}
 		>
 			{children}
