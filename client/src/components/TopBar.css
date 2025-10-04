@@ -1,0 +1,152 @@
+.session-bar {
+  display: flex;
+  align-items: center;
+  justify-content:space-between;
+  background: #0b0b0f;
+  padding: 15px 20px;
+  border-radius: 14px;
+  font-family: sans-serif;
+  color: white;
+  gap: 20px;
+  min-width: 90vw;
+  border: 1px solid #313144;
+}
+
+.time-block {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  gap: 10px;
+}
+
+.icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;       /* box size */
+  height: 36px;
+  border-radius: 8px; /* rounded corners */
+  background: #1a1a1a; /* default dark background */
+}
+
+.elapsed-box {
+  background: #2a003f; /* purple-ish background to match your screenshot */
+  color: #b388ff;      /* icon color */
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+}
+
+.icon.start {
+  color: #5eead4; /* teal for session start */
+}
+
+.icon.elapsed-icon {
+  color: #a855f7; /* purple for elapsed */
+}
+
+.icon.end {
+  color: #ec4899; /* pink for end */
+}
+
+.label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.time {
+  font-size: 18px;
+  color: #5eead4;
+  font-weight: 600;
+}
+
+.elapsed {
+  font-size: 18px;
+  color: #c084fc;
+  font-weight: 600;
+}
+
+.end-time {
+  font-size: 18px;
+  color: #ec4899;
+  font-weight: 600;
+}
+
+.button-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.break-btn {
+  background: linear-gradient(90deg, #a855f7, #ec4899);
+  color: black;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: 40px;
+}
+
+.break-btn:hover {
+  opacity: 0.9;
+}
+
+.end-btn {
+  background: #1c1c1f;
+  color: #ef4444;
+  padding: 10px 18px;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: 40px;
+}
+
+.end-btn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.start-btn {
+  background: #1c1c1f;
+  color: #73e026;
+  padding: 10px 18px;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: 40px;
+}
+
+.start-btn:hover {
+  background: #12230a;
+  color: white;
+}
+
+hr {
+  border: none;
+  height: 50px;
+  width: 1px;
+  background: linear-gradient(to right, #e0e0e0, #f5f5f5, #e0e0e0);
+  margin: 0 12px;
+  opacity: 0.2;
+}
