@@ -12,6 +12,8 @@ createRoot(document.getElementById('root')).render(
 		<SessionBar />
 		<div style={{display:"flex", marginTop:"2rem", gap:"10px"}}>
 			<CombinedTracker />
+		<div style={{display:"flex", marginTop:"2rem", gap:"50px"}}>
+			<CamFeed />
 			<SessionTimeline />
 		</div>
 	</SessionProvider>

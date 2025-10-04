@@ -1,64 +1,12 @@
 import React from 'react';
 import { Clock, Zap, Hand, Eye } from 'lucide-react';
 import './Timeline.css';
+import { useSession } from '../context/SessionContext';
 
 export default function SessionTimeline() {
-	const timelineEvents = [
-		{
-			id: 1,
-			type: 'start',
-			title: 'Session Start',
-			time: '14:23',
-			icon: Clock,
-			color: 'cyan',
-			xp: null,
-		},
-		{
-			id: 2,
-			type: 'focus',
-			title: 'Deep Focus',
-			time: '14:28',
-			icon: Zap,
-			color: 'green',
-			xp: 20,
-		},
-		{
-			id: 3,
-			type: 'touch',
-			title: 'Face Touch',
-			time: '14:35',
-			icon: Hand,
-			color: 'magenta',
-			xp: -5,
-		},
-		{
-			id: 4,
-			type: 'check',
-			title: 'Phone Check',
-			time: '14:42',
-			icon: Eye,
-			color: 'orange',
-			xp: null,
-		},
-		{
-			id: 5,
-			type: 'focus',
-			title: 'Focus Zone',
-			time: '14:50',
-			icon: Zap,
-			color: 'green',
-			xp: 20,
-		},
-		{
-			id: 6,
-			type: 'touch',
-			title: 'Face Touch',
-			time: '14:58',
-			icon: Hand,
-			color: 'magenta',
-			xp: -5,
-		},
-	];
+	const {
+            timelineEvents,
+        } = useSession();
 
 	return (
 		<div className="timeline-container">
@@ -70,8 +18,9 @@ export default function SessionTimeline() {
 
 					{timelineEvents.map((event, index) => (
 						<div
-							key={event.id}
+							key={index}
 							className="timeline-event"
+                            index = {index}
 						>
 							<div
 								className={`event-icon icon-${event.color}`}

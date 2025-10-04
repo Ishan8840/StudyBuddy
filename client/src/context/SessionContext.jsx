@@ -1,8 +1,13 @@
-// src/context/SessionContext.jsx
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState } from 'react';
+import { Clock, Zap, Hand, Eye, Coffee } from 'lucide-react';
 
 const SessionContext = createContext();
-
+const formatTime = (date = new Date()) => {
+	return new Date(date).toLocaleTimeString([], {
+		hour: '2-digit',
+		minute: '2-digit',
+	});
+};
 export const SessionProvider = ({ children }) => {
   const [session, setSession] = useState({
     timeStarted: null,
@@ -13,128 +18,157 @@ export const SessionProvider = ({ children }) => {
   });
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isOnBreak, setIsOnBreak] = useState(false);
+	const [timelineEvents, setTimelineEvents] = useState([]);
   const [isNotFocused, setIsNotFocused] = useState(false);
 
-  const startSession = () => {
-    setSession({
-      timeStarted: new Date().toISOString(),
-      timeEnded: null,
-      touchedFace: [],
-      distracted: [],
-      breaks: [],
-    });
-    setIsSessionActive(true);
-  };
+	const startSession = () => {
+		const now = new Date();
+		setSession({
+			timeStarted: now.toISOString(),
+			timeEnded: null,
+			touchedFace: [],
+			distracted: [],
+			breaks: [],
+		});
+		setIsSessionActive(true);
+		setTimelineEvents([
+			{
+				type: 'start',
+				title: 'Session Start',
+				time: formatTime(now),
+				icon: Clock,
+				color: 'cyan',
+				xp: 5,
+			},
+		]);
+	};
 
-  const endSession = async () => {
-    const updatedSession = {
-      ...session,
-      timeEnded: new Date().toISOString(),
-    };
+	const endSession = async () => {
+		const now = new Date();
+		const updatedSession = {
+			...session,
+			timeEnded: now.toISOString(),
+		};
 
-    setSession(updatedSession); // still update React state
+		setSession(updatedSession);
 
-    try {
-      const res = await fetch("http://localhost:5000/session/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedSession), // use updated object here
-      });
-      const data = await res.json();
-      console.log("✅ Session sent to backend:", data);
-    } catch (err) {
-      console.error("❌ Failed to end session:", err);
-    }
+		try {
+			const res = await fetch(
+				'http://localhost:5000/session/start',
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(updatedSession),
+				}
+			);
+			const data = await res.json();
+			console.log('✅ Session sent to backend:', data);
+		} catch (err) {
+			console.error('❌ Failed to end session:', err);
+		}
 
-    setIsSessionActive(false);
-    console.log(updatedSession);
-  };
+		setTimelineEvents((prev) => [
+			...prev,
+			{
+				type: 'session end',
+				title: 'Session End',
+				time: formatTime(now),
+				icon: Clock,
+				color: 'cyan',
+				xp: null,
+			},
+		]);
 
-  const touchedFace = () => {
-    setSession((prev) => ({
-      ...prev,
-      touchedFace: [...prev.touchedFace, new Date().toISOString()],
-    }));
-  };
+		setIsSessionActive(false);
+	};
 
-  const breakStart = () => {
-    setIsOnBreak(true);
-    setSession((prev) => ({
-      ...prev,
-      breaks: [...prev.breaks, [new Date().toISOString()]],
-    }));
-  };
+	const touchedFace = () => {
+		const now = new Date();
+		setSession((prev) => ({
+			...prev,
+			touchedFace: [...prev.touchedFace, now.toISOString()],
+		}));
+		setTimelineEvents((prev) => [
+			...prev,
+			{
+				type: 'touch',
+				title: 'Face Touch',
+				time: formatTime(now),
+				icon: Hand,
+				color: 'orange',
+				xp: -5,
+			},
+		]);
+	};
 
-  const breakEnd = () => {
-    setIsOnBreak(false);
-    setSession((prev) => {
-      if (prev.breaks.length === 0) return prev; // no break to end
+	const breakStart = () => {
+		const now = new Date();
+		setIsOnBreak(true);
+		setSession((prev) => ({
+			...prev,
+			breaks: [...prev.breaks, [now.toISOString()]],
+		}));
+		setTimelineEvents((prev) => [
+			...prev,
+			{
+				type: 'break-start',
+				title: 'Break Started',
+				time: formatTime(now),
+				icon: Coffee,
+				color: 'green',
+				xp: null,
+			},
+		]);
+	};
+
+	const breakEnd = () => {
+		const now = new Date();
+		setIsOnBreak(false);
+		setSession((prev) => {
+			if (prev.breaks.length === 0) return prev;
 
       const updatedBreaks = [...prev.breaks];
       const lastBreak = updatedBreaks[updatedBreaks.length - 1];
 
-      // update last break with an "end" timestamp
-      updatedBreaks[updatedBreaks.length - 1] = {
-        ...lastBreak,
-        end: new Date().toISOString(),
-      };
+			updatedBreaks[updatedBreaks.length - 1] = {
+				...lastBreak,
+				end: now.toISOString(),
+			};
 
-      return {
-        ...prev,
-        breaks: updatedBreaks,
-      };
-    });
-  };
+			return { ...prev, breaks: updatedBreaks };
+		});
 
-  const distractionStart = () => {
-    setIsNotFocused(true);
-    setSession((prev) => ({
-      ...prev,
-      distracted: [...prev.distracted, [new Date().toISOString()]],
-    }));
-  };
+		setTimelineEvents((prev) => [
+			...prev,
+			{
+				type: 'break',
+				title: 'Resume Session',
+				time: formatTime(now),
+				icon: Coffee,
+				color: 'green',
+				xp: null,
+			},
+		]);
+	};
 
-  const distractionEnd = () => {
-    setIsNotFocused(false);
-    setSession((prev) => {
-      if (prev.distracted.length === 0) return prev; // no break to end
-
-      const updatedDistraction = [...prev.distracted];
-      const lastDistraction = updatedDistraction[updatedDistraction.length - 1];
-
-      // update last break with an "end" timestamp
-      updatedDistraction[updatedDistraction.length - 1] = {
-        ...lastDistraction,
-        end: new Date().toISOString(),
-      };
-
-      return {
-        ...prev,
-        distracted: updatedDistraction,
-      };
-    });
-  };
-
-  return (
-    <SessionContext.Provider
-      value={{
-        session,
-        startSession,
-        endSession,
-        touchedFace,
-        breakStart,
-        breakEnd,
-        distractionStart,
-        distractionEnd,
-        isNotFocused,
-        isSessionActive,
-        setIsSessionActive,
-        isOnBreak,
-      }}
-    >
-      {children}
-    </SessionContext.Provider>
-  );
+	return (
+		<SessionContext.Provider
+			value={{
+				session,
+				startSession,
+				endSession,
+				touchedFace,
+				breakStart,
+				breakEnd,
+				isSessionActive,
+				setIsSessionActive,
+				isOnBreak,
+				timelineEvents,
+			}}
+		>
+			{children}
+		</SessionContext.Provider>
+	);
 };
 
 export const useSession = () => {
