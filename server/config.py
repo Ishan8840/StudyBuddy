@@ -1,0 +1,7 @@
+from decouple import config
+
+MONGODB_URI = config("SECRET_KEY")
+GEMINI_API_KEY = config("ALGORITHM")
+SECRET_KEY = config("SECRET_KEY")
+ALGORITHM = config("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = config("ACCESS_TOKEN_EXPIRE_MINUTES", cast=int)
