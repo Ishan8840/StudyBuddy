@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useSession } from "../context/SessionContext";
 
 export default function CombinedTracker() {
   const videoRef = useRef(null);
@@ -9,18 +10,23 @@ export default function CombinedTracker() {
   const hasSpokenDistractionRef = useRef(false);
   const hasSpokenFaceTouchRef = useRef(false);
 
-  const [direction, setDirection] = useState("Forward");
+  const { touchedFace, distractionStart, distractionEnd, isSessionActive } =
+    useSession();
+
+  const sessionActiveRef = useRef(isSessionActive);
+
+  const [direction, setDirection] = useState("Focused");
   const [isDistracted, setIsDistracted] = useState(false);
   const [handTouch, setHandTouch] = useState({
     touching: false,
     startTime: null,
     overThreshold: false,
   });
+  const [faceBox, setFaceBox] = useState(null);
 
   const lookStartTime = useRef(null);
   const distractionThreshold = 2000;
   const faceTouchThreshold = 2000;
-  const distractedPeriods = useRef([]);
 
   const smoothedBoxRef = useRef(null);
   const smoothedHandsRef = useRef([]);
@@ -30,6 +36,10 @@ export default function CombinedTracker() {
     "iCrDUkL56s3C8sCRl7wb",
     "Qe9WSybioZxssVEwlBSo",
   ];
+
+  useEffect(() => {
+    sessionActiveRef.current = isSessionActive;
+  }, [isSessionActive]);
 
   const HAND_CONNECTIONS = [
     [0, 1],
@@ -54,7 +64,7 @@ export default function CombinedTracker() {
     [19, 20],
   ];
 
-  // Helper functions
+  // Helpers
   function smoothValue(prev, current, alpha = 0.2) {
     if (!prev) return current;
     return prev * (1 - alpha) + current * alpha;
@@ -140,8 +150,8 @@ export default function CombinedTracker() {
   const generateSpeech = async (type) => {
     const distractionMessages = [
       "Get back to work BOY!",
-      "Naughty Naughty Sparshy!",
-      "Don’t make me come over there!",
+      "Naughty Naughty you got distracted!",
+      "Don't get sidetracked!",
     ];
 
     const faceTouchMessages = [
@@ -194,7 +204,7 @@ export default function CombinedTracker() {
 
     ctx.drawImage(results.image, 0, 0, canvasEl.width, canvasEl.height);
 
-    // Process face landmarks for head direction
+    // Face landmarks
     if (results.faceLandmarks) {
       const landmarks = results.faceLandmarks;
       const yaw = estimateYaw(landmarks);
@@ -206,36 +216,25 @@ export default function CombinedTracker() {
         yawHistory.current.length;
 
       const threshold = 0.05;
-      let newDirection = "Forward";
-      if (avgYaw < -threshold) newDirection = "Looking Right";
-      else if (avgYaw > threshold) newDirection = "Looking Left";
+      let newDirection = "Focused";
+      if (avgYaw < -threshold || avgYaw > threshold)
+        newDirection = "Distracted";
 
       setDirection(newDirection);
 
-      if (newDirection !== "Forward") {
-        if (!lookStartTime.current) {
-          lookStartTime.current = Date.now();
-        } else {
-          // Check if threshold has been exceeded
+      if (newDirection !== "Focused") {
+        if (!lookStartTime.current) lookStartTime.current = Date.now();
+        else {
           const duration = Date.now() - lookStartTime.current;
-          if (duration >= distractionThreshold && !isDistracted) {
+          if (duration >= distractionThreshold && !isDistracted)
             setIsDistracted(true);
-          }
         }
       } else if (lookStartTime.current) {
-        const duration = Date.now() - lookStartTime.current;
-        if (duration >= distractionThreshold) {
-          distractedPeriods.current.push({
-            start: new Date(lookStartTime.current).toISOString(),
-            end: new Date().toISOString(),
-          });
-          console.log("Distracted periods:", distractedPeriods.current);
-        }
         lookStartTime.current = null;
         setIsDistracted(false);
       }
 
-      // Calculate face bounding box
+      // Face box
       const canvasW = canvasEl.width;
       const canvasH = canvasEl.height;
       let minX = 1,
@@ -255,38 +254,38 @@ export default function CombinedTracker() {
         h: (maxY - minY) * canvasH,
       };
       smoothedBoxRef.current = smoothBox(smoothedBoxRef.current, newBox);
+      setFaceBox(smoothedBoxRef.current);
 
-      if (smoothedBoxRef.current) {
+      if (sessionActiveRef.current && smoothedBoxRef.current) {
         drawCyberBox(ctx, smoothedBoxRef.current);
       }
     }
 
-    // Process hands
+    // Hands
     let touchingFace = false;
     const landmarksList = [];
 
     if (results.leftHandLandmarks) {
-      const hand = results.leftHandLandmarks.map((l) => ({
-        x: l.x * canvasEl.width,
-        y: l.y * canvasEl.height,
-      }));
-      landmarksList.push(hand);
+      landmarksList.push(
+        results.leftHandLandmarks.map((l) => ({
+          x: l.x * canvasEl.width,
+          y: l.y * canvasEl.height,
+        }))
+      );
     }
-
     if (results.rightHandLandmarks) {
-      const hand = results.rightHandLandmarks.map((l) => ({
-        x: l.x * canvasEl.width,
-        y: l.y * canvasEl.height,
-      }));
-      landmarksList.push(hand);
+      landmarksList.push(
+        results.rightHandLandmarks.map((l) => ({
+          x: l.x * canvasEl.width,
+          y: l.y * canvasEl.height,
+        }))
+      );
     }
 
     if (smoothedBoxRef.current) {
       landmarksList.forEach((hand) => {
         hand.forEach((p) => {
-          if (isPointInBox(p, smoothedBoxRef.current)) {
-            touchingFace = true;
-          }
+          if (isPointInBox(p, smoothedBoxRef.current)) touchingFace = true;
         });
       });
     }
@@ -298,19 +297,17 @@ export default function CombinedTracker() {
 
     if (touchingFace) {
       setHandTouch((prev) => {
-        if (!prev.touching) {
+        if (!prev.touching)
           return {
             touching: true,
             startTime: Date.now(),
             overThreshold: false,
           };
-        } else {
-          const duration = (Date.now() - prev.startTime) / 1000;
-          return {
-            ...prev,
-            overThreshold: duration > faceTouchThreshold / 1000,
-          };
-        }
+        return {
+          ...prev,
+          overThreshold:
+            (Date.now() - prev.startTime) / 1000 > faceTouchThreshold / 1000,
+        };
       });
     } else {
       setHandTouch({ touching: false, startTime: null, overThreshold: false });
@@ -343,16 +340,14 @@ export default function CombinedTracker() {
     ctx.restore();
   };
 
+  // Camera setup
   useEffect(() => {
-    if (!window.Holistic || !window.Camera) {
-      console.error("MediaPipe Holistic or Camera not loaded");
-      return;
-    }
+    if (!window.Holistic || !window.Camera)
+      return console.error("MediaPipe not loaded");
 
     const holistic = new window.Holistic({
-      locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`;
-      },
+      locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
     });
 
     holistic.setOptions({
@@ -368,48 +363,60 @@ export default function CombinedTracker() {
     holistic.onResults(onResults);
     holisticRef.current = holistic;
 
-    if (videoRef.current) {
-      const camera = new window.Camera(videoRef.current, {
-        onFrame: async () => {
-          if (holisticRef.current) {
-            await holisticRef.current.send({ image: videoRef.current });
-          }
-        },
-        width: 640,
-        height: 480,
-      });
-      camera.start();
-      cameraRef.current = camera;
-    }
+    // Async camera setup
+    const initCamera = async () => {
+      // Wait for the WASM module to finish initializing
+      await holisticRef.current.initialize();
+
+      if (videoRef.current) {
+        const camera = new window.Camera(videoRef.current, {
+          onFrame: async () => {
+            if (holisticRef.current) {
+              await holisticRef.current.send({ image: videoRef.current });
+            }
+          },
+          width: 640,
+          height: 480,
+        });
+        camera.start();
+        cameraRef.current = camera;
+      }
+    };
+
+    initCamera();
 
     return () => {
-      if (cameraRef.current) {
-        cameraRef.current.stop();
-      }
-      if (holisticRef.current) {
-        holisticRef.current.close();
-      }
+      cameraRef.current?.stop();
+      holisticRef.current?.close();
     };
   }, []);
 
+  // Speech triggers
   useEffect(() => {
+    if (!isSessionActive) return;
+
     if (isDistracted && !hasSpokenDistractionRef.current) {
       generateSpeech("distraction");
       hasSpokenDistractionRef.current = true;
+      distractionStart();
     }
-    if (!isDistracted) {
+    if (!isDistracted && hasSpokenDistractionRef.current) {
+      // **record distraction end**
+      distractionEnd();
       hasSpokenDistractionRef.current = false;
     }
   }, [isDistracted]);
 
   useEffect(() => {
+    if (!isSessionActive) return;
+
     if (handTouch.overThreshold && !hasSpokenFaceTouchRef.current) {
       generateSpeech("faceTouch");
       hasSpokenFaceTouchRef.current = true;
+
+      touchedFace();
     }
-    if (!handTouch.overThreshold) {
-      hasSpokenFaceTouchRef.current = false;
-    }
+    if (!handTouch.overThreshold) hasSpokenFaceTouchRef.current = false;
   }, [handTouch.overThreshold]);
 
   return (
@@ -427,21 +434,32 @@ export default function CombinedTracker() {
         height={480}
         style={{ border: "1px solid black" }}
       />
-      <div
-        style={{
-          position: "absolute",
-          top: 20,
-          left: "50%",
-          transform: "translateX(-50%)",
-          color: "white",
-          fontSize: "24px",
-          fontWeight: "bold",
-          textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
-        }}
-      >
-        {direction}
-      </div>
-      {handTouch.overThreshold && (
+
+      {/* Distracted text above face */}
+      {isSessionActive && faceBox && (
+        <div
+          style={{
+            position: "absolute",
+            left: `${640 - (faceBox.x + faceBox.w / 2)}px`, // mirrored
+            top: `${Math.max(faceBox.y - 40, 0)}px`,
+            transform: "translateX(-50%)",
+            color: isDistracted ? "#FF005C" : "#00FFE7", // neon red/cyan
+            fontSize: "20px",
+            fontWeight: "600",
+            fontFamily: "'Orbitron', sans-serif",
+            textShadow: `0 0 8px ${isDistracted ? "#FF005C" : "#00FFE7"}`, // subtle glow
+            pointerEvents: "none",
+            padding: "2px 8px",
+            borderRadius: "4px",
+            letterSpacing: "0.5px",
+          }}
+        >
+          {isDistracted ? "Distracted" : "Focused"}
+        </div>
+      )}
+
+      {/* Face touch warning */}
+      {isSessionActive && handTouch.overThreshold && (
         <div
           style={{
             position: "absolute",
