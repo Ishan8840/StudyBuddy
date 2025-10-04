@@ -1,10 +1,17 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import CombinedTracker from './components/CombinedTracker.jsx'
+import CamFeed from './components/CamFeed.jsx'
+import SessionBar from './components/TopBar.jsx'
+import { SessionProvider } from './context/SessionContext.jsx'
+import SessionTimeline from './components/Timeline.jsx'
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <CombinedTracker />
-  </StrictMode>,
-)
+	<SessionProvider>
+		<SessionBar />
+		<div style={{display:"flex", marginTop:"2rem", gap:"10px"}}>
+			<CamFeed />
+			<SessionTimeline />
+		</div>
+	</SessionProvider>
+);

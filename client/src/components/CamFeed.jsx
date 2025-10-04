@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { FaceDetection } from '@mediapipe/face_detection';
 import { Camera } from '@mediapipe/camera_utils';
 import { Hands } from '@mediapipe/hands';
+import { useSession } from '../context/SessionContext';
 
 export default function App() {
 	const videoRef = useRef(null);
@@ -16,6 +17,8 @@ export default function App() {
 		startTime: null,
 		overTen: false,
 	});
+
+	const { session, touchedFace, isSessionActive } = useSession();
 
 	const HAND_CONNECTIONS = [
 		[0, 1],
@@ -206,10 +209,12 @@ export default function App() {
 					} else {
 						const duration =
 							(Date.now() - prev.startTime) / 1000;
-						if (duration > 10 && !prev.overTen)
+						if (duration > 10 && !prev.overTen) {
 							console.log(
 								'🚨 Hand has been touching face for over 10s!'
 							);
+							touchedFace();
+						}
 						return { ...prev, overTen: duration > 10 };
 					}
 				});
@@ -334,25 +339,47 @@ export default function App() {
 				ref={canvasRef}
 				width={640}
 				height={480}
-				style={{ border: '1px solid black' }}
+				style={{
+					borderRadius: '12px', // smooth rounded corners
+					boxShadow: '0 8px 20px rgba(0,0,0,0.4)', // soft shadow for depth
+					border: '2px solid #1a1a1a', // subtle dark border
+					backgroundColor: '#0b0b0f', // dark background when no stream
+					display: 'block',
+					margin: '0 auto', // center horizontally
+				}}
 			/>
 			{handTouch.overTen && (
 				<div
 					style={{
-						position: 'absolute',
+						position: 'fixed',
 						top: 20,
 						left: '50%',
 						transform: 'translateX(-50%)',
-						padding: '10px 20px',
-						backgroundColor: 'red',
-						color: 'white',
-						fontWeight: 'bold',
-						borderRadius: '8px',
-						zIndex: 10,
+						padding: '16px 32px',
+						background:
+							'linear-gradient(90deg, #ff073a, #ff3c6e)', // intense red/pink
+						color: '#fff',
+						fontWeight: '700',
+						borderRadius: '14px',
+						boxShadow:
+							'0 0 20px #ff073a, 0 0 40px #ff3c6e', // glowing effect
+						zIndex: 1000,
+						opacity: 1,
+						transition:
+							'top 0.5s ease, opacity 0.5s ease',
+						display: 'flex',
+						alignItems: 'center',
+						gap: '12px',
+						fontFamily: 'sans-serif',
+						pointerEvents: 'none',
+						textShadow: '0 0 6px #fff, 0 0 12px #ff073a', // glow around text
 					}}
 				>
-					🚨 Hand has been touching face for over 10
-					seconds!
+					<span style={{ fontSize: '22px' }}>🚨</span>
+					<span>
+						Hand has been touching face for over 10
+						seconds!
+					</span>
 				</div>
 			)}
 		</div>
