@@ -1,4 +1,4 @@
-import React, {
+import {
 	createContext,
 	useContext,
 	useState,
@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 
 const SessionContext = createContext();
+
+const base_url = import.meta.env.VITE_BACKEND
 
 const formatTime = (date = new Date()) => {
 	return new Date(date).toLocaleTimeString([], {
@@ -73,7 +75,7 @@ export const SessionProvider = ({ children }) => {
 		setSession(updatedSession);
 		try {
 			console.log(JSON.stringify(updatedSession));
-			const res = await fetch('http://localhost:8000/analyse', {
+			const res = await fetch(`${base_url}/analyse`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(updatedSession),
