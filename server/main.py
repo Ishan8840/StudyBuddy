@@ -1,10 +1,19 @@
-from typing import Union
+from typing import List, Union
 from fastapi import FastAPI, HTTPException
-from models import SessionTimeline
+from models import ReturnedSessions, SessionTimeline
 from db import sessions_collection
 from services.gemini_service import generate_summary
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
@@ -30,7 +39,7 @@ def create_session(session: SessionTimeline):
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@app.get("/sessions")
+@app.get("/sessions", response_model=List[ReturnedSessions])
 def get_sessions():
     try:
         sessions = list(sessions_collection.find())
@@ -38,6 +47,6 @@ def get_sessions():
         for session in sessions:
             session["_id"] = str(session["_id"])
         
-        return {"sessions": sessions}
+        return sessions
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
