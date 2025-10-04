@@ -70,6 +70,8 @@ async def create_session(session: SessionTimeline, user = Depends(verify_token))
         summary = generate_summary(session_data)
         
         session_data["summary"] = summary
+        session_data["user_email"] = user["email"]
+
         result = sessions_collection.insert_one(session_data)
         session_data["_id"] = str(result.inserted_id)
 
@@ -82,7 +84,7 @@ async def create_session(session: SessionTimeline, user = Depends(verify_token))
 @app.get("/sessions", response_model=List[ReturnedSessions])
 def get_sessions(user = Depends(verify_token)):
     try:
-        sessions = list(sessions_collection.find())
+        sessions = list(sessions_collection.find({"user_email": user["email"]}))
 
         for session in sessions:
             session["_id"] = str(session["_id"])
