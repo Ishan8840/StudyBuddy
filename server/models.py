@@ -9,4 +9,4 @@ class SessionTimeline(BaseModel):
     touchedFace: List[datetime]
     distracted: List[List[datetime]]
     breaks: List[List[datetime]]
-    Summary: Optional[List[str]] = None
+    summary: Optional[List[str]] = None

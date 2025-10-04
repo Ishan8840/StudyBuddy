@@ -1,6 +1,7 @@
 from typing import Union
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from models import SessionTimeline
+from db import sessions_collection
 from services.gemini_service import generate_summary
 
 app = FastAPI()
@@ -13,11 +14,19 @@ def read_root():
 
 @app.post("/analyse")
 def analyse(session: SessionTimeline):
+    try:
 
-    session_data = session.model_dump()
+        session_data = session.model_dump()
 
-    summary = generate_summary(session_data)
+        summary = generate_summary(session_data)
 
-    session_data["summary"] = summary
+        session_data["summary"] = summary
 
-    return session_data
+        result = sessions_collection.insert_one(session_data)
+
+        session_data["_id"] = str(result.inserted_id)
+
+        return session_data
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

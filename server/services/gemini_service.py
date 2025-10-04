@@ -61,5 +61,5 @@ def generate_summary(session_json: dict) -> str:
         if match:
             response_text = match.group(1).strip()
 
-    tips = json.loads(response.text)
+    tips = json.loads(response_text)
     return tips
