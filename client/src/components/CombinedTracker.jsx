@@ -166,14 +166,14 @@ export default function CombinedTracker() {
 
 	const generateSpeech = async (type) => {
 		const distractionMessages = [
-			'Get back to work BOY!',
+			'Get back to work boy!',
 			'Naughty Naughty you got distracted!',
 			"Don't get sidetracked!",
 		];
 
 		const faceTouchMessages = [
-			'Stop those sneaky touches!',
-			'Don’t make me catch you again!',
+			'Stop those sneaky touches Ishan!',
+			'Ishan! Dont touch your face.',
 		];
 
 		const messages =

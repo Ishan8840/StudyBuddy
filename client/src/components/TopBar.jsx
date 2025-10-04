@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import './TopBar.css';
 import { Clock, Pause, Play, StopCircle, Zap } from 'lucide-react';
 import { useSession } from '../context/SessionContext';
@@ -11,49 +11,33 @@ export default function SessionBar() {
 		breakStart,
 		breakEnd,
 		isSessionActive,
-		session,
 		isOnBreak,
+		session,
+		elapsedTime,
+		formatElapsedTime,
 	} = useSession();
 
 	const [confirmAction, setConfirmAction] = useState(null);
-	const [elapsedTime, setElapsedTime] = useState('--:--:--');
 
 	const handleConfirm = () => {
 		if (confirmAction === 'start') startSession();
 		if (confirmAction === 'end') endSession();
 		setConfirmAction(null);
 	};
-	useEffect(() => {
-		if (!isSessionActive || !session.timeStarted) {
-			setElapsedTime('--:--:--');
-			return;
-		}
 
-		const interval = setInterval(() => {
-			const start = new Date(session.timeStarted).getTime();
-			const now = Date.now();
-			const diff = now - start;
-
-			const hours = Math.floor(diff / 3600000);
-			const minutes = Math.floor((diff % 3600000) / 60000);
-			const seconds = Math.floor((diff % 60000) / 1000);
-
-			setElapsedTime(
-				`${hours.toString().padStart(2, '0')}:${minutes
-					.toString()
-					.padStart(2, '0')}:${seconds
-					.toString()
-					.padStart(2, '0')}`
-			);
-		}, 1000);
-
-		return () => clearInterval(interval);
-	}, [isSessionActive, session.timeStarted]);
+	const renderTime = (time) =>
+		time
+			? new Date(time).toLocaleTimeString([], {
+					hour: '2-digit',
+					minute: '2-digit',
+			  })
+			: '--:--';
 
 	return (
 		<>
 			<div className="session-bar">
 				<div style={{ display: 'flex', gap: '10px' }}>
+					{/* Session Start */}
 					<div className="time-block">
 						<Clock className="icon start" />
 						<div
@@ -64,30 +48,38 @@ export default function SessionBar() {
 						>
 							<div className="label">Session Start</div>
 							<div className="time">
-								{session.timeStarted
-									? new Date(
-											session.timeStarted
-									  ).toLocaleTimeString([], {
-											hour: '2-digit',
-											minute: '2-digit',
-									  })
-									: '--:--'}
+								{renderTime(session.timeStarted)}
 							</div>
 						</div>
 					</div>
+
 					<hr />
+
+					{/* Elapsed Time */}
 					<div className="time-block">
 						<Zap className="icon elapsed-icon" />
-						<div>
+						<div
+							style={{
+								display: 'flex',
+								flexDirection: 'column',
+							}}
+						>
 							<div className="label">Elapsed</div>
 							<div className="elapsed">
-								{elapsedTime}
+								{formatElapsedTime()}
 							</div>
 						</div>
 					</div>
 				</div>
 
-				<div style={{ display: 'flex', gap: '10px' }}>
+				<div
+					style={{
+						display: 'flex',
+						gap: '10px',
+						marginTop: '10px',
+					}}
+				>
+					{/* Break / Resume Buttons */}
 					<div className="button-group">
 						{isSessionActive &&
 							(!isOnBreak ? (
@@ -105,6 +97,8 @@ export default function SessionBar() {
 									<Play size={15} /> Resume
 								</button>
 							))}
+
+						{/* Start / End Session Buttons */}
 						{isSessionActive ? (
 							<button
 								className="end-btn"
@@ -125,26 +119,28 @@ export default function SessionBar() {
 							</button>
 						)}
 					</div>
+
 					<hr />
+
+					{/* Session End */}
 					<div className="time-block">
 						<Clock className="icon end" />
-						<div>
+						<div
+							style={{
+								display: 'flex',
+								flexDirection: 'column',
+							}}
+						>
 							<div className="label">Session End</div>
 							<div className="end-time">
-								{session.timeEnded
-									? new Date(
-											session.timeEnded
-									  ).toLocaleTimeString([], {
-											hour: '2-digit',
-											minute: '2-digit',
-									  })
-									: '--:--'}
+								{renderTime(session.timeEnded)}
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 
+			{/* Confirm Modal */}
 			{confirmAction && (
 				<ConfirmModal
 					message={
