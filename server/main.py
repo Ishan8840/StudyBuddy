@@ -13,15 +13,13 @@ def read_root():
 
 
 @app.post("/analyse")
-def analyse(session: SessionTimeline):
+def create_session(session: SessionTimeline):
     try:
-
         session_data = session.model_dump()
 
         summary = generate_summary(session_data)
-
+        
         session_data["summary"] = summary
-
         result = sessions_collection.insert_one(session_data)
 
         session_data["_id"] = str(result.inserted_id)
