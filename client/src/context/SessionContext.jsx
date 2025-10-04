@@ -3,6 +3,7 @@ import {
 	useContext,
 	useState,
 	useEffect,
+	useRef,
 } from 'react';
 import {
 	Clock,
@@ -14,15 +15,13 @@ import {
 } from 'lucide-react';
 
 const SessionContext = createContext();
+const base_url = import.meta.env.VITE_BACKEND;
 
-const base_url = import.meta.env.VITE_BACKEND
-
-const formatTime = (date = new Date()) => {
-	return new Date(date).toLocaleTimeString([], {
+const formatTime = (date = new Date()) =>
+	new Date(date).toLocaleTimeString([], {
 		hour: '2-digit',
 		minute: '2-digit',
 	});
-};
 
 export const SessionProvider = ({ children }) => {
 	const [session, setSession] = useState({
@@ -42,7 +41,59 @@ export const SessionProvider = ({ children }) => {
 	const [insightsFromBackend, setInsightsFromBackend] = useState(
 		[]
 	);
+	const [isLoading, setIsLoading] = useState(false);
 
+	// --- Elapsed Time State ---
+	const [elapsedTime, setElapsedTime] = useState(0);
+	const intervalRef = useRef(null);
+
+	useEffect(() => {
+		if (!session.timeStarted) {
+			setElapsedTime(0);
+			return;
+		}
+
+		const startTime = new Date(session.timeStarted);
+
+		if (intervalRef.current) clearInterval(intervalRef.current);
+
+		if (isSessionActive && !isOnBreak) {
+			intervalRef.current = setInterval(() => {
+				const now = new Date();
+				const totalBreakTime = session.breaks.reduce(
+					(acc, b) => {
+						if (!b[1]) return acc; // ongoing break not counted yet
+						return (
+							acc + (new Date(b[1]) - new Date(b[0]))
+						);
+					},
+					0
+				);
+
+				const secondsElapsed = Math.floor(
+					(now - startTime - totalBreakTime) / 1000
+				);
+				setElapsedTime(
+					secondsElapsed >= 0 ? secondsElapsed : 0
+				);
+			}, 1000);
+		}
+
+		return () => clearInterval(intervalRef.current);
+	}, [session, isSessionActive, isOnBreak]);
+
+	const formatElapsedTime = () => {
+		const hours = Math.floor(elapsedTime / 3600);
+		const minutes = Math.floor((elapsedTime % 3600) / 60);
+		const seconds = elapsedTime % 60;
+		return [
+			hours.toString().padStart(2, '0'),
+			minutes.toString().padStart(2, '0'),
+			seconds.toString().padStart(2, '0'),
+		].join(':');
+	};
+
+	// --- Session Functions ---
 	const startSession = () => {
 		const now = new Date();
 		setSession({
@@ -65,6 +116,8 @@ export const SessionProvider = ({ children }) => {
 		]);
 		setFaceTouches(0);
 		setDistractedNum(0);
+		setElapsedTime(0);
+		setInsightsFromBackend([]);
 	};
 
 	const endSession = async () => {
@@ -76,15 +129,18 @@ export const SessionProvider = ({ children }) => {
 			score: focusPercentage,
 		};
 		setSession(updatedSession);
+
 		try {
-			console.log(JSON.stringify(updatedSession));
+			setIsLoading(true);
+			setIsSessionActive(false);
+
 			const res = await fetch(`${base_url}/analyse`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(updatedSession),
 			});
 			const data = await res.json();
-			setInsightsFromBackend(data.summary); // an array of 3 strings
+			setInsightsFromBackend(data.summary); // array of 3 strings
 		} catch (err) {
 			console.error('❌ Failed to end session:', err);
 		}
@@ -101,7 +157,7 @@ export const SessionProvider = ({ children }) => {
 			},
 		]);
 
-		setIsSessionActive(false);
+		setIsLoading(false);
 	};
 
 	const touchedFace = () => {
@@ -129,7 +185,7 @@ export const SessionProvider = ({ children }) => {
 		setIsOnBreak(true);
 		setSession((prev) => ({
 			...prev,
-			breaks: [...prev.breaks, [now]], // start time only
+			breaks: [...prev.breaks, [now]],
 		}));
 		setTimelineEvents((prev) => [
 			...prev,
@@ -153,13 +209,11 @@ export const SessionProvider = ({ children }) => {
 			const updatedBreaks = [...prev.breaks];
 			const lastBreak = updatedBreaks[updatedBreaks.length - 1];
 
-			// push end time as second element
-			if (lastBreak.length === 1) {
+			if (lastBreak.length === 1)
 				updatedBreaks[updatedBreaks.length - 1] = [
 					lastBreak[0],
 					now,
 				];
-			}
 
 			return { ...prev, breaks: updatedBreaks };
 		});
@@ -176,53 +230,12 @@ export const SessionProvider = ({ children }) => {
 		]);
 	};
 
-	// ✅ fix: use correct keys timeStarted/timeEnded
-	const getTotalDistractionTime = (session) => {
-		const now = new Date();
-		return session.distracted.reduce((total, d) => {
-			if (!d[0]) return total; // skip if no start
-			const start = new Date(d[0]);
-			const end = d[1] ? new Date(d[1]) : now;
-			return total + (end - start);
-		}, 0);
-	};
-
-	const getFocusPercentage = (session) => {
-		if (!session.timeStarted) return 100;
-
-		const now = session.timeEnded
-			? new Date(session.timeEnded)
-			: new Date();
-		const totalSessionTime = now - new Date(session.timeStarted);
-		if (totalSessionTime <= 0) return 100;
-
-		const distractedTime = getTotalDistractionTime(session);
-		const focusTime = totalSessionTime - distractedTime;
-
-		return Math.max(
-			0,
-			Math.round((focusTime / totalSessionTime) * 100)
-		);
-	};
-
-	useEffect(() => {
-		if (!session.timeStarted) {
-			setFocusPercentage(100);
-			return;
-		}
-		const interval = setInterval(() => {
-			setFocusPercentage(getFocusPercentage(session));
-		}, 1000);
-
-		return () => clearInterval(interval);
-	}, [session]);
-
 	const distractionStart = () => {
 		const now = new Date().toISOString();
 		setIsNotFocused(true);
 		setSession((prev) => ({
 			...prev,
-			distracted: [...prev.distracted, [now]], // start time only
+			distracted: [...prev.distracted, [now]],
 		}));
 		setTimelineEvents((prev) => [
 			...prev,
@@ -243,19 +256,49 @@ export const SessionProvider = ({ children }) => {
 		setIsNotFocused(false);
 		setSession((prev) => {
 			if (prev.distracted.length === 0) return prev;
-
 			const updatedDistractions = [...prev.distracted];
 			const lastDistraction =
 				updatedDistractions[updatedDistractions.length - 1];
-
-			if (lastDistraction.length === 1) {
+			if (lastDistraction.length === 1)
 				updatedDistractions[updatedDistractions.length - 1] =
 					[lastDistraction[0], now];
-			}
-
 			return { ...prev, distracted: updatedDistractions };
 		});
 	};
+
+	const getTotalDistractionTime = (session) => {
+		const now = new Date();
+		return session.distracted.reduce((total, d) => {
+			if (!d[0]) return total;
+			const start = new Date(d[0]);
+			const end = d[1] ? new Date(d[1]) : now;
+			return total + (end - start);
+		}, 0);
+	};
+
+	const getFocusPercentage = (session) => {
+		if (!session.timeStarted) return 100;
+		const now = session.timeEnded
+			? new Date(session.timeEnded)
+			: new Date();
+		const totalSessionTime = now - new Date(session.timeStarted);
+		if (totalSessionTime <= 0) return 100;
+		const distractedTime = getTotalDistractionTime(session);
+		const focusTime = totalSessionTime - distractedTime;
+		return Math.max(
+			0,
+			Math.round((focusTime / totalSessionTime) * 100)
+		);
+	};
+
+	useEffect(() => {
+		if (!session.timeStarted) return setFocusPercentage(100);
+		const interval = setInterval(
+			() => setFocusPercentage(getFocusPercentage(session)),
+			1000
+		);
+		return () => clearInterval(interval);
+	}, [session]);
 
 	return (
 		<SessionContext.Provider
@@ -279,6 +322,10 @@ export const SessionProvider = ({ children }) => {
 				setDistractedNum,
 				focusPercentage,
 				insightsFromBackend,
+				isLoading,
+				elapsedTime,
+				formatElapsedTime,
+				setIsLoading,
 			}}
 		>
 			{children}
@@ -288,10 +335,9 @@ export const SessionProvider = ({ children }) => {
 
 export const useSession = () => {
 	const context = useContext(SessionContext);
-	if (!context) {
+	if (!context)
 		throw new Error(
 			'useSession must be used within SessionProvider'
 		);
-	}
 	return context;
 };
