@@ -30,3 +30,16 @@ def analyse(session: SessionTimeline):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/sessions")
+def get_sessions():
+    try:
+        sessions = list(sessions_collection.find())
+
+        for session in sessions:
+            session["_id"] = str(session["_id"])
+        
+        return {"sessions": sessions}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
