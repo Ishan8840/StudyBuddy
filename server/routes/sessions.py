@@ -10,6 +10,7 @@ import jwt
 from datetime import datetime, timedelta
 from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from services.auth_util import verify_token, verify_token_optional
+from services.cache_service import get_user_sessions, invalidate_user_sessions
 
 
 router = APIRouter(
@@ -31,6 +32,8 @@ async def create_session(session: SessionTimeline, user = Depends(verify_token_o
             result = sessions_collection.insert_one(session_data)
             session_data["_id"] = str(result.inserted_id)
 
+            invalidate_user_sessions(user["email"])
+
         return session_data
     
     except Exception as e:
@@ -40,11 +43,8 @@ async def create_session(session: SessionTimeline, user = Depends(verify_token_o
 @router.get("/sessions", response_model=List[ReturnedSessions])
 def get_sessions(user = Depends(verify_token)):
     try:
-        sessions = list(sessions_collection.find({"user_email": user["email"]}))
-
-        for session in sessions:
-            session["_id"] = str(session["_id"])
-        
+        sessions = get_user_sessions(user["email"])
         return sessions
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
