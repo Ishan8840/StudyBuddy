@@ -133,10 +133,14 @@ export const SessionProvider = ({ children }) => {
 		try {
 			setIsLoading(true);
 			setIsSessionActive(false);
+			const token = localStorage.getItem("access_token");
 
 			const res = await fetch(`${base_url}/analyse`, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${token}`,
+				},
 				body: JSON.stringify(updatedSession),
 			});
 			const data = await res.json();
