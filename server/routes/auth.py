@@ -21,13 +21,13 @@ def signup(user: UserSignup):
     hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
     users_collection.insert_one({
         "email": user.email,
-        "full_name": user.full_name,
+        "name": user.name,
         "hashed_password": hashed_password
     })
     
     return UserResponse(
         email=user.email,
-        full_name=user.full_name,
+        name=user.name,
         message="User created successfully"
     )
 
@@ -57,5 +57,5 @@ def login(user: UserLogin):
         "access_token": access_token,
         "token_type": "bearer",
         "email": db_user["email"],
-        "full_name": db_user["full_name"]
+        "name": db_user["name"]
     }

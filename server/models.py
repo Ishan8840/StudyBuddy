@@ -32,7 +32,7 @@ class ReturnedSessions(BaseModel):
 class UserSignup(BaseModel):
     email: EmailStr
     password: str
-    full_name: str
+    name: str
 
 
 class UserLogin(BaseModel):
@@ -42,5 +42,5 @@ class UserLogin(BaseModel):
 
 class UserResponse(BaseModel):
     email: str
-    full_name: str
+    name: str
     message: str
