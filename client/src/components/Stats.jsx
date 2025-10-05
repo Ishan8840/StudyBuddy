@@ -1,45 +1,101 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Calendar, Clock, Target, Zap } from 'lucide-react';
+import { useSession } from '../context/SessionContext';
 
 export default function StatsDashboard() {
-	const stats = [
-		{
-			icon: Calendar,
-			label: 'Total Sessions',
-			value: '6',
-			color: '#3b82f6',
-		},
-		{
-			icon: Clock,
-			label: 'Total Time',
-			value: '13h 45m',
-			color: '#a855f7',
-		},
-		{
-			icon: Target,
-			label: 'Avg. Focus',
-			value: '88%',
-			color: '#10b981',
-		},
-		{
-			icon: Zap,
-			label: 'Total XP',
-			value: '1,370',
-			color: '#f59e0b',
-		},
-	];
+	const { pastSessions } = useSession();
+	const [hoveredIndex, setHoveredIndex] = useState(null);
 
-	const [hoveredIndex, setHoveredIndex] = React.useState(null);
+	// 🧮 Compute derived stats from pastSessions
+	const stats = useMemo(() => {
+		if (!pastSessions || pastSessions.length === 0) {
+			return [
+				{
+					icon: Calendar,
+					label: 'Total Sessions',
+					value: '0',
+					color: '#3b82f6',
+				},
+				{
+					icon: Clock,
+					label: 'Total Time',
+					value: '0h 0m',
+					color: '#a855f7',
+				},
+				{
+					icon: Target,
+					label: 'Avg. Focus',
+					value: '0%',
+					color: '#10b981',
+				},
+				{
+					icon: Zap,
+					label: 'Total XP',
+					value: '0',
+					color: '#f59e0b',
+				},
+			];
+		}
+
+		const totalSessions = pastSessions.length;
+
+		// total time in ms
+		const totalTimeMs = pastSessions.reduce((acc, s) => {
+			const start = new Date(s.timeStarted);
+			const end = new Date(s.timeEnded);
+			return acc + (end - start);
+		}, 0);
+
+		const totalMins = Math.floor(totalTimeMs / 60000);
+		const hours = Math.floor(totalMins / 60);
+		const mins = totalMins % 60;
+		const totalTime = `${hours}h ${mins}m`;
+
+		// average focus score
+		const avgFocus =
+			Math.round(
+				pastSessions.reduce(
+					(acc, s) => acc + (s.score || 0),
+					0
+				) / totalSessions
+			) || 0;
+
+		// total XP
+		const totalXP = pastSessions.reduce(
+			(acc, s) => acc + (s.xp || 0),
+			0
+		);
+
+		return [
+			{
+				icon: Calendar,
+				label: 'Total Sessions',
+				value: totalSessions,
+				color: '#3b82f6',
+			},
+			{
+				icon: Clock,
+				label: 'Total Time',
+				value: totalTime,
+				color: '#a855f7',
+			},
+			{
+				icon: Target,
+				label: 'Avg. Focus',
+				value: `${avgFocus}%`,
+				color: '#10b981',
+			},
+			{
+				icon: Zap,
+				label: 'Total XP',
+				value: totalXP,
+				color: '#f59e0b',
+			},
+		];
+	}, [pastSessions]);
 
 	return (
 		<div style={styles.container}>
-			<style>{`
-        @keyframes lift {
-          to {
-            transform: translateY(-4px);
-          }
-        }
-      `}</style>
 			{stats.map((stat, index) => (
 				<div
 					key={index}
@@ -133,9 +189,3 @@ const styles = {
 		lineHeight: '1',
 	},
 };
-
-if (typeof document !== 'undefined') {
-	const styleSheet = document.createElement('style');
-	styleSheet.textContent = ``;
-	document.head.appendChild(styleSheet);
-}

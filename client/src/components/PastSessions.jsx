@@ -6,43 +6,38 @@ import {
 	Eye,
 	Zap,
 } from 'lucide-react';
+import { useSession } from '../context/SessionContext';
 
 export default function SessionHistory() {
-	const sessions = [
-		{
-			date: 'Oct 2, 2025',
-			duration: '2h 30m',
-			focusScore: 92,
-			pomodoros: 5,
-			touches: 8,
-			distractions: 5,
-			xp: 250,
-		},
-		{
-			date: 'Oct 1, 2025',
-			duration: '1h 45m',
-			focusScore: 85,
-			pomodoros: 3,
-			touches: 12,
-			distractions: 8,
-			xp: 180,
-		},
-		{
-			date: 'Sep 30, 2025',
-			duration: '3h 15m',
-			focusScore: 95,
-			pomodoros: 6,
-			touches: 5,
-			distractions: 3,
-			xp: 320,
-		},
-	];
+	const { pastSessions } = useSession();
+
+	// 🧠 Convert backend sessions into the format your UI expects
+	const sessions =
+		pastSessions?.map((s) => ({
+			date: new Date(s.timeStarted).toLocaleDateString(
+				'en-US',
+				{
+					month: 'short',
+					day: 'numeric',
+					year: 'numeric',
+				}
+			),
+			duration: getDuration(s.timeStarted, s.timeEnded),
+			focusScore: s.score ?? 0,
+			pomodoros: s.breaks?.length ?? 0,
+			touches: s.touchedFace?.length ?? 0,
+			distractions: s.distracted?.length ?? 0,
+			xp: s.xp ?? 0,
+		})) ?? [];
 
 	return (
 		<div style={styles.container}>
 			<div style={styles.header}>
 				<h1 style={styles.title}>Session History</h1>
-				<span style={styles.sessionCount}>3 sessions</span>
+				<span style={styles.sessionCount}>
+					{sessions.length} session
+					{sessions.length > 1 ? 's' : ''}
+				</span>
 			</div>
 
 			<div style={styles.sessionList}>
@@ -145,6 +140,16 @@ export default function SessionHistory() {
 			</div>
 		</div>
 	);
+}
+
+// 🧮 Helper to calculate readable duration
+function getDuration(start, end) {
+	if (!start || !end) return '—';
+	const diff = Math.max(0, new Date(end) - new Date(start));
+	const mins = Math.floor(diff / 60000);
+	const hours = Math.floor(mins / 60);
+	const rem = mins % 60;
+	return `${hours ? `${hours}h ` : ''}${rem}m`;
 }
 
 const styles = {
