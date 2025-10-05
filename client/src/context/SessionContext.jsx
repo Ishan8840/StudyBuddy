@@ -91,7 +91,7 @@ export const SessionProvider = ({ children }) => {
 
 			// Make GET request to your backend with Authorization header
 			const response = await fetch(
-				'https://studybuddy-cydb.onrender.com/sessions',
+				'http://127.0.0.1:8000/sessions',
 				{
 					method: 'GET',
 					headers: {

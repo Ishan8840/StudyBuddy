@@ -17,7 +17,7 @@ class SessionTimeline(BaseModel):
 
 class ReturnedSessions(BaseModel):
     id: str = Field(alias="_id")
-    imeStarted: datetime
+    timeStarted: datetime
     timeEnded: datetime
     touchedFace: Optional[List[datetime]] = None
     distracted: Optional[List[List[datetime]]] = None
