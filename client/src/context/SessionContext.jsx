@@ -87,11 +87,11 @@ export const SessionProvider = ({ children }) => {
 			if (!token) {
 				throw new Error('No authentication token found');
 			}
-			console.log(token)
+			console.log(token);
 
 			// Make GET request to your backend with Authorization header
 			const response = await fetch(
-				'http://127.0.0.1:8000/sessions',
+				'https://studybuddy-cydb.onrender.com/sessions',
 				{
 					method: 'GET',
 					headers: {
@@ -106,10 +106,15 @@ export const SessionProvider = ({ children }) => {
 			}
 
 			const data = await response.json();
-			console.log('Fetched past sessions:', data);
-			setIsPastSessions(data);
 
-			return data;
+			// Sort sessions by timeStarted (latest first)
+			const sortedSessions = data.sort(
+				(a, b) =>
+					new Date(b.timeStarted) - new Date(a.timeStarted)
+			);
+
+			console.log('Fetched past sessions:', sortedSessions);
+			setIsPastSessions(sortedSessions);
 		} catch (error) {
 			console.error('Error fetching past sessions:', error);
 			return [];
@@ -144,57 +149,86 @@ export const SessionProvider = ({ children }) => {
   };
 
   const endSession = async () => {
-    const now = new Date();
+		const now = new Date();
+		const startTime = new Date(session.timeStarted);
+		const totalSessionTime = (now - startTime) / 60000; // minutes
 
-    const startTime = new Date(session.timeStarted);
-    const totalSessionTime = (now - startTime) / 60000;
+		// Calculate XP gained
+		const earnedXP = Math.floor(
+			(totalSessionTime * focusPercentage) / 100
+		);
 
-    const earnedXP = Math.floor((totalSessionTime * focusPercentage) / 100);
+		// Compute total XP correctly (use previous exp)
+		const totalXP = exp + earnedXP;
+		setExp(totalXP);
 
-    const totalXP = exp + earnedXP;
-    setExp(totalXP);
+		// Prepare updated session for saving
+		const updatedSession = {
+			...session,
+			timeEnded: now.toISOString(),
+			summary: ['string'], // Placeholder until backend returns actual summary
+			score: focusPercentage,
+			xp: earnedXP, // use earnedXP, not exp
+		};
 
-    const updatedSession = {
-      ...session,
-      timeEnded: now.toISOString(),
-      summary: ["string"],
-      score: focusPercentage,
-      xp: exp,
-    };
-    setSession(updatedSession);
-    console.log(updatedSession);
-    try {
-      setIsLoading(true);
-      setIsSessionActive(false);
-      const token = localStorage.getItem("token");
-      console.log(token);
-      const res = await fetch(`${base_url}/analyse`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updatedSession),
-      });
-      const data = await res.json();
-      setInsightsFromBackend(data.summary);
-    } catch (err) {
-      console.error("❌ Failed to end session:", err);
-    }
+		setSession(updatedSession);
+		console.log('📘 Updated session:', updatedSession);
 
-    setTimelineEvents((prev) => [
-		...prev,
-		{
-			type: 'session end',
-			title: 'Session End',
-			time: formatTime(now),
-			icon: Clock,
-			color: 'cyan',
-			xp: earnedXP,
-		},
-	]);
+		try {
+			setIsLoading(true);
+			setIsSessionActive(false);
 
-    setIsLoading(false);
+			const token = localStorage.getItem('token');
+			if (!token)
+				throw new Error('No authentication token found');
+
+			const res = await fetch(`${base_url}/analyse`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify(updatedSession),
+			});
+
+			if (!res.ok)
+				throw new Error(`Backend error: ${res.status}`);
+
+			const data = await res.json();
+
+			// Use backend summary
+			setInsightsFromBackend(data.summary);
+
+			// Update session with backend results
+			const finalSession = {
+				...updatedSession,
+				summary: data.summary || updatedSession.summary,
+				score: data.score || updatedSession.score,
+			};
+
+			// Save to local state (prepend so latest appears first)
+			setIsPastSessions((prev) => [
+				finalSession,
+				...(prev || []),
+			]);
+		} catch (err) {
+			console.error('❌ Failed to end session:', err);
+		} finally {
+			setIsLoading(false);
+		}
+
+		// Add to timeline
+		setTimelineEvents((prev) => [
+			...prev,
+			{
+				type: 'session end',
+				title: 'Session End',
+				time: formatTime(now),
+				icon: Clock,
+				color: 'cyan',
+				xp: earnedXP,
+			},
+		]);
   };
 
   const touchedFace = () => {
