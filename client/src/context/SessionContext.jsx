@@ -168,7 +168,7 @@ export const SessionProvider = ({ children }) => {
 			timeEnded: now.toISOString(),
 			summary: ['string'], // Placeholder until backend returns actual summary
 			score: focusPercentage,
-			xp: earnedXP, // use earnedXP, not exp
+			xp: exp, // use earnedXP, not exp
 		};
 
 		setSession(updatedSession);

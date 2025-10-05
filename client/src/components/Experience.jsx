@@ -9,7 +9,7 @@ const Experience = () => {
   const streak = 7;
   const level = 12;
   const todayXP = exp;
-  const currentXP = 2450 + exp;
+  const currentXP = 2000 + exp;
   const maxXP = 3000;
   const progress = (currentXP / maxXP) * 100;
 
