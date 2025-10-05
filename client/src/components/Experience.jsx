@@ -74,14 +74,14 @@ const styles = {
   container: {
 		display: 'flex',
 		flexDirection: 'column',
-		width: '95vw',                  // match min-width: 90vw
+		width: '90vw',                  // match min-width: 90vw
 		padding: '15px 20px',           // same as session-bar
 		backgroundColor: '#0b0b0f',     // same background
 		borderRadius: '14px',           // same as session-bar
 		border: '1px solid #313144',    // same border
 		fontFamily: 'sans-serif',
 		color: 'white',
-		gap: '20px',                     // spacing between stats row and progress
+		gap: '10px',                     // spacing between stats row and progress
 		margin: '20px',             // center horizontally
 		alignSelf: 'flex-start',         // shrink vertically to content
 	},
@@ -89,7 +89,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "12px",
-    marginBottom: "5px",
+    marginBottom: "10px",
   },
   streakCard: {
     display: "flex",

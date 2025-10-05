@@ -33,6 +33,8 @@ export const SessionProvider = ({ children }) => {
     email: "",
     password: "",
   });
+	const [isCurrentSession, setIsCurrentSession] = useState(true);
+	const [pastSessions, setIsPastSessions] = useState([]);
 
   // --- Elapsed Time State ---
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -67,16 +69,36 @@ export const SessionProvider = ({ children }) => {
     return () => clearInterval(intervalRef.current);
   }, [session, isSessionActive, isOnBreak]);
 
-  const formatElapsedTime = () => {
-    const hours = Math.floor(elapsedTime / 3600);
-    const minutes = Math.floor((elapsedTime % 3600) / 60);
-    const seconds = elapsedTime % 60;
-    return [
-      hours.toString().padStart(2, "0"),
-      minutes.toString().padStart(2, "0"),
-      seconds.toString().padStart(2, "0"),
-    ].join(":");
-  };
+	const formatElapsedTime = () => {
+		const hours = Math.floor(elapsedTime / 3600);
+		const minutes = Math.floor((elapsedTime % 3600) / 60);
+		const seconds = elapsedTime % 60;
+		return [
+			hours.toString().padStart(2, '0'),
+			minutes.toString().padStart(2, '0'),
+			seconds.toString().padStart(2, '0'),
+		].join(':');
+	};
+
+	const getPastSessions = async () => {
+		try {
+			// Make GET request to your backend
+			const response = await fetch(
+				`https://studybuddy-cydb.onrender.com/${sessions}`
+			); // false = past sessions
+			if (!response.ok) {
+				throw new Error('Failed to fetch past sessions');
+			}
+			const data = await response.json();
+			console.log(data);
+			setIsPastSessions(data);
+			
+			return data; // return array of past sessions
+		} catch (error) {
+			console.error('Error fetching past sessions:', error);
+			return [];
+		}
+	};
 
   // --- Session Functions ---
   const startSession = () => {
@@ -145,16 +167,16 @@ export const SessionProvider = ({ children }) => {
     }
 
     setTimelineEvents((prev) => [
-      ...prev,
-      {
-        type: "session end",
-        title: "Session End",
-        time: formatTime(now),
-        icon: Clock,
-        color: "cyan",
-        xp: null,
-      },
-    ]);
+		...prev,
+		{
+			type: 'session end',
+			title: 'Session End',
+			time: formatTime(now),
+			icon: Clock,
+			color: 'cyan',
+			xp: earnedXP,
+		},
+	]);
 
     setIsLoading(false);
   };
@@ -390,6 +412,10 @@ export const SessionProvider = ({ children }) => {
         setForm,
         signup,
         login,
+				isCurrentSession,
+				setIsCurrentSession,
+				pastSessions,
+				getPastSessions,
       }}
     >
       {children}

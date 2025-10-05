@@ -9,6 +9,7 @@ import SessionTimeline from "./components/Timeline.jsx";
 import AIInsights from "./components/Insights.jsx";
 import Signup from "./components/SignUp.jsx";
 import Login from "./components/Login.jsx";
+import { MainPage } from './MainPage.jsx';
 
 function App() {
   return (
@@ -18,23 +19,7 @@ function App() {
         <Route
           path="/"
           element={
-            <>
-              <SessionBar />
-              <Experience />
-
-              <div
-                style={{
-                  display: "flex",
-                  marginTop: "2rem",
-                  gap: "50px",
-                }}
-              >
-                <SessionTimeline />
-                <CombinedTracker />
-
-                <AIInsights />
-              </div>
-            </>
+            <MainPage />
           }
         />
 
