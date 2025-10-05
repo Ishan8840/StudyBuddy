@@ -140,7 +140,7 @@ export const SessionProvider = ({ children }) => {
 			setIsLoading(true);
 			setIsSessionActive(false);
 			const token = localStorage.getItem("token");
-
+			console.log(token);
 			const res = await fetch(`${base_url}/analyse`, {
 				method: 'POST',
 				headers: {

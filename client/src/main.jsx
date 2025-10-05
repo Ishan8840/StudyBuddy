@@ -26,8 +26,9 @@ function App() {
 									gap: '50px',
 								}}
 							>
-								<CombinedTracker />
 								<SessionTimeline />
+								<CombinedTracker />
+
 								<AIInsights />
 							</div>
 						</>
