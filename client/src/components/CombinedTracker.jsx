@@ -19,6 +19,8 @@ export default function CombinedTracker() {
 		distractedNum,
 		faceTouches,
 		focusPercentage,
+		exp,
+		setExp,
 	} = useSession();
 
 	const sessionActiveRef = useRef(isSessionActive);
@@ -448,6 +450,7 @@ export default function CombinedTracker() {
 			generateSpeech('distraction');
 			hasSpokenDistractionRef.current = true;
 			distractionStart();
+			setExp(exp-10);
 		}
 		if (!isDistracted && hasSpokenDistractionRef.current) {
 			// **record distraction end**
@@ -467,6 +470,8 @@ export default function CombinedTracker() {
 			hasSpokenFaceTouchRef.current = true;
 
 			touchedFace();
+			setExp(exp-5);
+			console.log(exp)
 		}
 		if (!handTouch.overThreshold)
 			hasSpokenFaceTouchRef.current = false;
