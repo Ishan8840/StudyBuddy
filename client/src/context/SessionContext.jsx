@@ -144,7 +144,7 @@ export const SessionProvider = ({ children }) => {
 				body: JSON.stringify(updatedSession),
 			});
 			const data = await res.json();
-			setInsightsFromBackend(data.summary); // array of 3 strings
+			setInsightsFromBackend(data.summary);
 		} catch (err) {
 			console.error('❌ Failed to end session:', err);
 		}
