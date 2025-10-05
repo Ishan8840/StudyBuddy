@@ -89,7 +89,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "12px",
-    marginBottom: "20px",
+    marginBottom: "5px",
   },
   streakCard: {
     display: "flex",
