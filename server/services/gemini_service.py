@@ -23,6 +23,7 @@ def generate_summary(session_json: dict) -> str:
             - distracted: [startTime, endTime] pairs
             - breaks: [startTime, endTime] pairs
             - score: number
+            - xp: number
 
             Task:
 
