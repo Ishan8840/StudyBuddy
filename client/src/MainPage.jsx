@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import CombinedTracker from './components/CombinedTracker';
 import Experience from './components/Experience';
 import AIInsights from './components/Insights';
@@ -9,8 +10,12 @@ import SessionBar from './components/TopBar';
 import { useSession } from './context/SessionContext';
 
 export const MainPage = () => {
-	const { isCurrentSession } = useSession(); // I assume you meant isSessionActive
+	const { isCurrentSession, getPastSessions } = useSession(); // I assume you meant isSessionActive
 
+	useEffect(() => {
+		getPastSessions();
+	}, [])
+	
 	if (!isCurrentSession)
 		return (
 			<>

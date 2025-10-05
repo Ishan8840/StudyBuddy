@@ -82,18 +82,34 @@ export const SessionProvider = ({ children }) => {
 
 	const getPastSessions = async () => {
 		try {
-			// Make GET request to your backend
+			// Get token from localStorage
+			const token = localStorage.getItem('token');
+			if (!token) {
+				throw new Error('No authentication token found');
+			}
+			console.log(token)
+
+			// Make GET request to your backend with Authorization header
 			const response = await fetch(
-				`https://studybuddy-cydb.onrender.com/${sessions}`
-			); // false = past sessions
+				'https://studybuddy-cydb.onrender.com/sessions',
+				{
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${token}`,
+					},
+				}
+			);
+
 			if (!response.ok) {
 				throw new Error('Failed to fetch past sessions');
 			}
+
 			const data = await response.json();
-			console.log(data);
+			console.log('Fetched past sessions:', data);
 			setIsPastSessions(data);
-			
-			return data; // return array of past sessions
+
+			return data;
 		} catch (error) {
 			console.error('Error fetching past sessions:', error);
 			return [];
