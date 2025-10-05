@@ -11,6 +11,7 @@ class SessionTimeline(BaseModel):
     distracted: Optional[List[List[datetime]]] = None
     breaks: Optional[List[List[datetime]]] = None
     score: int
+    xp: int
     summary: Optional[List[str]] = None
 
 
