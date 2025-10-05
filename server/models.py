@@ -17,11 +17,13 @@ class SessionTimeline(BaseModel):
 
 class ReturnedSessions(BaseModel):
     id: str = Field(alias="_id")
-    timeStarted: datetime
+    imeStarted: datetime
     timeEnded: datetime
-    touchedFace: List[datetime]
-    distracted: List[List[datetime]]
-    breaks: List[List[datetime]]
+    touchedFace: Optional[List[datetime]] = None
+    distracted: Optional[List[List[datetime]]] = None
+    breaks: Optional[List[List[datetime]]] = None
+    score: int
+    xp: Optional[int] = None
     summary: Optional[List[str]] = None
 
     class Config:
