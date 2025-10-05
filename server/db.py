@@ -11,3 +11,7 @@ client = MongoClient(MONGODB_URI)
 db = client["studysesh"]
 
 sessions_collection = db["sessions"]
+users_collection = db["users"]
+
+users_collection.create_index("email", unique=True)
+sessions_collection.create_index("user_email")
