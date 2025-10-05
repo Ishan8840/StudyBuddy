@@ -19,23 +19,7 @@ function App() {
         <Route
           path="/"
           element={
-            <>
-              <SessionBar />
-              <Experience />
-
-              <div
-                style={{
-                  display: "flex",
-                  marginTop: "2rem",
-                  gap: "50px",
-                }}
-              >
-                <SessionTimeline />
-                <CombinedTracker />
-
-                <AIInsights />
-              </div>
-            </>
+            <MainPage />
           }
         />
 

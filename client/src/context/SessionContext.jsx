@@ -167,16 +167,16 @@ export const SessionProvider = ({ children }) => {
     }
 
     setTimelineEvents((prev) => [
-      ...prev,
-      {
-        type: "session end",
-        title: "Session End",
-        time: formatTime(now),
-        icon: Clock,
-        color: "cyan",
-        xp: null,
-      },
-    ]);
+		...prev,
+		{
+			type: 'session end',
+			title: 'Session End',
+			time: formatTime(now),
+			icon: Clock,
+			color: 'cyan',
+			xp: earnedXP,
+		},
+	]);
 
     setIsLoading(false);
   };

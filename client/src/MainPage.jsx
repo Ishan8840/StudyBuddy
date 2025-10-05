@@ -1,4 +1,5 @@
 import CombinedTracker from './components/CombinedTracker';
+import Experience from './components/Experience';
 import AIInsights from './components/Insights';
 import SessionHistory from './components/PastSessions';
 import StatsDashboard from './components/Stats';
@@ -24,6 +25,8 @@ export const MainPage = () => {
 		<>
 			<SessionBar />
 			<Toggle />
+			<Experience />
+
 			<div
 				style={{
 					display: 'flex',
@@ -33,6 +36,7 @@ export const MainPage = () => {
 			>
 				<SessionTimeline />
 				<CombinedTracker />
+
 				<AIInsights />
 			</div>
 		</>
