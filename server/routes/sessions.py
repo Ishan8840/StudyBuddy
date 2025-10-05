@@ -9,7 +9,7 @@ import bcrypt
 import jwt
 from datetime import datetime, timedelta
 from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-from services.auth_util import verify_token
+from services.auth_util import verify_token, verify_token_optional
 
 
 router = APIRouter(
@@ -18,17 +18,18 @@ router = APIRouter(
 
 
 @router.post("/analyse")
-async def create_session(session: SessionTimeline, user = Depends(verify_token)):
+async def create_session(session: SessionTimeline, user = Depends(verify_token_optional)):
     try:
         session_data = session.model_dump()
 
         summary = generate_summary(session_data)
-        
         session_data["summary"] = summary
-        session_data["user_email"] = user["email"]
 
-        result = sessions_collection.insert_one(session_data)
-        session_data["_id"] = str(result.inserted_id)
+        if user:
+            session_data["user_email"] = user["email"]
+
+            result = sessions_collection.insert_one(session_data)
+            session_data["_id"] = str(result.inserted_id)
 
         return session_data
     
