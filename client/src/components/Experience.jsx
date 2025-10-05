@@ -7,10 +7,10 @@ const Experience = () => {
 
   // Calculate stats (you can adjust these based on your logic)
   const streak = 7;
-  const level = 12;
+  const level = 2;
   const todayXP = exp;
-  const currentXP = 2000 + exp;
-  const maxXP = 3000;
+  const currentXP = exp;
+  const maxXP = 1000;
   const progress = (currentXP / maxXP) * 100;
 
 
@@ -22,7 +22,7 @@ const Experience = () => {
           <Flame style={styles.streakIcon} size={18} />
           <div style={styles.cardContent}>
             <p style={styles.cardLabel}>Streak</p>
-            <p style={styles.cardValue}>7 days</p>
+            <p style={styles.cardValue}>{streak} days</p>
           </div>
         </div>
 
@@ -31,7 +31,7 @@ const Experience = () => {
           <Trophy style={styles.levelIcon} size={18} />
           <div style={styles.cardContent}>
             <p style={styles.cardLabel}>Level</p>
-            <p style={styles.cardValue}>12</p>
+            <p style={styles.cardValue}>{level}</p>
           </div>
         </div>
 
@@ -55,7 +55,7 @@ const Experience = () => {
       <div style={styles.progressSection}>
         <div style={styles.progressHeader}>
           <p style={styles.progressLabel}>XP Progress</p>
-          <p style={styles.progressValue}>{currentXP} / 3000</p>
+          <p style={styles.progressValue}>{currentXP} / 1000</p>
         </div>
         <div style={styles.progressBarBg}>
           <div

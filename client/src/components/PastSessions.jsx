@@ -259,6 +259,7 @@ const styles = {
 		borderRadius: '8px',
 		padding: '16px',
 		marginTop: '16px',
+		width: '97%',
 	},
 	summaryHeader: {
 		display: 'flex',

@@ -39,7 +39,7 @@ export const SessionProvider = ({ children }) => {
   // --- Elapsed Time State ---
   const [elapsedTime, setElapsedTime] = useState(0);
   const intervalRef = useRef(null);
-  let token = "";
+  let token;
 
   useEffect(() => {
     if (!session.timeStarted) {
