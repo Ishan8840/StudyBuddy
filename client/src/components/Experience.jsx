@@ -74,7 +74,7 @@ const styles = {
   container: {
 		display: 'flex',
 		flexDirection: 'column',
-		width: '90vw',                  // match min-width: 90vw
+		minWidth: '95vw',                  // match min-width: 90vw
 		padding: '15px 20px',           // same as session-bar
 		backgroundColor: '#0b0b0f',     // same background
 		borderRadius: '14px',           // same as session-bar
