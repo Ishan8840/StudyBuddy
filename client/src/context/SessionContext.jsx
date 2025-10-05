@@ -47,6 +47,8 @@ export const SessionProvider = ({ children }) => {
 		email: '',
 		password: '',
 	});
+	const [isCurrentSession, setIsCurrentSession] = useState(true);
+	const [pastSessions, setIsPastSessions] = useState([]);
 
 	// --- Elapsed Time State ---
 	const [elapsedTime, setElapsedTime] = useState(0);
@@ -97,6 +99,26 @@ export const SessionProvider = ({ children }) => {
 			minutes.toString().padStart(2, '0'),
 			seconds.toString().padStart(2, '0'),
 		].join(':');
+	};
+
+	const getPastSessions = async () => {
+		try {
+			// Make GET request to your backend
+			const response = await fetch(
+				`https://studybuddy-cydb.onrender.com/${sessions}`
+			); // false = past sessions
+			if (!response.ok) {
+				throw new Error('Failed to fetch past sessions');
+			}
+			const data = await response.json();
+			console.log(data);
+			setIsPastSessions(data);
+			
+			return data; // return array of past sessions
+		} catch (error) {
+			console.error('Error fetching past sessions:', error);
+			return [];
+		}
 	};
 
 	// --- Session Functions ---
@@ -409,6 +431,10 @@ export const SessionProvider = ({ children }) => {
 				setForm,
 				signup,
 				login,
+				isCurrentSession,
+				setIsCurrentSession,
+				pastSessions,
+				getPastSessions,
 			}}
 		>
 			{children}
