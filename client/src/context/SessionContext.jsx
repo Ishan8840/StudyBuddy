@@ -42,10 +42,16 @@ export const SessionProvider = ({ children }) => {
 		[]
 	);
 	const [isLoading, setIsLoading] = useState(false);
+	const [form, setForm] = useState({
+		name: '',
+		email: '',
+		password: '',
+	});
 
 	// --- Elapsed Time State ---
 	const [elapsedTime, setElapsedTime] = useState(0);
 	const intervalRef = useRef(null);
+	let token = '';
 
 	useEffect(() => {
 		if (!session.timeStarted) {
@@ -295,6 +301,75 @@ export const SessionProvider = ({ children }) => {
 		);
 	};
 
+	const signup = async () => {
+		console.log(form);
+		try {
+			const response = await fetch(
+				'https://studybuddy-cydb.onrender.com/signup/',
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(form),
+				}
+			);
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData.message || `Error: ${response.status}`
+				);
+			}
+
+			const result = await response.json();
+			// Save token in localStorage
+
+			console.log('Signup successful:', result);
+			alert(`Welcome, ${form.name}!`);
+		} catch (error) {
+			console.error('Signup failed:', error);
+			alert(`Signup failed: ${error.message}`);
+		}
+	};
+
+	const login = async () => {
+		console.log(form);
+
+		try {
+			const response = await fetch(
+				'https://studybuddy-cydb.onrender.com/login/',
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(form),
+				}
+			);
+
+			const result = await response.json(); // parse JSON once
+
+			if (!response.ok) {
+				throw new Error(
+					result.message || `Error: ${response.status}`
+				);
+			}
+
+			// Save token in localStorage
+			localStorage.setItem('token', result.access_token);
+
+			setForm((prev) => ({
+				...prev,
+				name: result.data.name,
+			}));
+
+			console.log('Login successful:', result);
+		} catch (error) {
+			console.error('Login failed:', error);
+		}
+	};
+
 	useEffect(() => {
 		if (!session.timeStarted) return setFocusPercentage(100);
 		const interval = setInterval(
@@ -330,6 +405,10 @@ export const SessionProvider = ({ children }) => {
 				elapsedTime,
 				formatElapsedTime,
 				setIsLoading,
+				form,
+				setForm,
+				signup,
+				login,
 			}}
 		>
 			{children}
