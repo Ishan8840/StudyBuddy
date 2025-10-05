@@ -135,7 +135,7 @@ export const SessionProvider = ({ children }) => {
 			score: focusPercentage,
 		};
 		setSession(updatedSession);
-
+		console.log(updatedSession);
 		try {
 			setIsLoading(true);
 			setIsSessionActive(false);
